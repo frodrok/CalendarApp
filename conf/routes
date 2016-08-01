@@ -27,4 +27,5 @@ POST /user/addEvent controllers.UserController.addEvent
 POST /user/setGroup controllers.UserController.setGroup
 
 #events
-GET /user/:userId/events controllers.UserController.eventsForUserJson(userId: Int)
+GET     /user/:userId/events    controllers.UserController.eventsForUserJson(userId: Int)
+POST    /user/:userId/newevent  controllers.UserController.saveEvent(userId: Int)

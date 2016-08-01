@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Action, Controller, Result}
+import play.api.mvc.{Action, BodyParsers, Controller, Result}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -18,9 +18,11 @@ import play.api.libs.json._
 
 /* import play.api.Play.current */
 import play.api.i18n.Messages.Implicits._
+import play.api.libs.functional.syntax._
 import scala.concurrent.duration._
 
-case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime, to: DateTime, groupId: Option[Int])
+case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime, to: Option[DateTime], groupId: Option[Int])
+case class TempEvent(eventName: String, from: String, groupId: Int)
 
 class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) extends Controller with I18nSupport{
 
@@ -32,6 +34,17 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
       "groupId" -> event.groupId
     )
   }
+
+  implicit val eventReads: Reads[TempEvent] = (
+    (JsPath \ "title").read[String] and
+      (JsPath \ "from").read[String] and
+      (JsPath \ "groupId").read[Int]
+  )(TempEvent.apply _)
+
+  /* implicit val placeReads: Reads[Place] = (
+    (JsPath \ "name").read[String] and
+      (JsPath \ "location").read[Location]
+    )(Place.apply _) */
 
   val addEventform: Form[addEventFormData] = Form(
     mapping(
@@ -111,11 +124,11 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
       val eventsSeq = Await.result(userDao.getEventsForUser(userId), 3.seconds)
 
       val withTimeStamps = eventsSeq.seq.map {
-        event => new EventWithTimeStamp(event.id, event.eventName, new DateTime(event.from), new DateTime(event.to), event.groupId)
+        event => new EventWithTimeStamp(event.id, event.eventName, new DateTime(event.from), Some(new DateTime(event.to)), event.groupId)
       }
 
       val asJson = Json.toJson(withTimeStamps)
-      Ok(asJson).withHeaders("Content-Type" -> "application/json; charset=utf-8", "Access-Control-Allow-Credentials" -> "true", "Access-Control-Allow-Origin" -> "http://yourdomain.com")
+      Ok(asJson).withHeaders("Content-Type" -> "application/json; charset=utf-8") /* , "Access-Control-Allow-Credentials" -> "true", "Access-Control-Allow-Origin" -> "http://yourdomain.com") */
 
     } catch {
       case userNotFound: UserNotFoundException => NotFound("No user with id: " + userId)
@@ -125,6 +138,36 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
     // Ok("dropped out of catch")
 
     }
+
+  def saveEvent(userId: Int) = Action(BodyParsers.parse.json) { request =>
+    val eventResult = request.body.validate[TempEvent]
+    eventResult.fold(
+      errors => {
+        BadRequest(Json.obj("status" ->"KO", "message" -> JsError.toJson(errors)))
+      },
+      event => {
+        val middleMan = EventWithTimeStamp(None, event.eventName, new DateTime(event.from), None, Some(event.groupId))
+        println(middleMan)
+
+        val to = middleMan.to.map(
+          value => value.getMillis
+        ).getOrElse(0L)
+
+        val dbEvent = Event(Some(0), middleMan.eventName, middleMan.from.getMillis, to, middleMan.groupId)
+
+        val eventIdOption = Await.result(userDao.addEvent(dbEvent), 3.seconds)
+
+        if (eventIdOption.isDefined) {
+          Ok(Json.obj("status" ->"OK", "message" -> ("Event '" + event.eventName + "' saved with id: " + eventIdOption.get) ))
+        } else {
+          BadRequest(Json.obj("status" -> "KO", "message" -> ("Could not persist event with name: " + event.eventName) ))
+        }
+
+
+      }
+
+    )
+  }
 }
 
 case class addEventFormData(eventName: String, from: DateTime, to: DateTime, fromClock: Int, toClock: Int, groupId: Int)

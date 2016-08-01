@@ -86,17 +86,15 @@ class BaseController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
   }
 
   def test = Action {
-    /* case class Event(id: Option[Int], eventName: String, from: Long, to: Long, groupId: Option[Int]) */
-    /* case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime, to: DateTime, groupId: Option[Int]) */
     val events = (1 to 6).map(
       i => {
-        val date = DateTime.now
-        EventWithTimeStamp(None, "pick up child", date, date.plusDays(i), Some(2))
+        val date = DateTime.now.plusDays(i)
+        EventWithTimeStamp(None, "pick up child", date, Some(date.plusDays(i + 1)), Some(2))
       }
     )
 
     events.map(
-      ewts => Event(None, ewts.eventName, ewts.from.getMillis, ewts.to.getMillis, ewts.groupId)
+      ewts => Event(None, ewts.eventName, ewts.from.getMillis, ewts.to.get.getMillis, ewts.groupId)
     ).foreach(
       event => userDao.addEvent(event)
     )
