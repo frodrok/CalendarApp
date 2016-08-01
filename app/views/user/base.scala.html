@@ -10,8 +10,13 @@
     <script>
 
             function setupCalendar(events) {
-                console.log("setting up calendar with these events: ");
-                events.forEach(console.log.bind(console));
+                if (events.length < 1) {
+                    console.log("no events recieved");
+                } else {
+                    console.log("setting up calendar with these events: ");
+                    events.forEach(console.log.bind(console));
+                }
+
                 $('#calendar').fullCalendar({
                     header: {
                         left: 'prev,next today',
@@ -27,16 +32,17 @@
 
             $(document).ready(function() {
 
-                var globalevents = [{title: 'All day Event', start: '2016-07-31T21:00:00'}, {title: 'Next day Event', start: '2016-08-01T09:00:00'}]
-
-                console.log(@user.id)
+                console.log(@user.id);
 
                 $.getJSON("http://localhost:9000/user/" + @user.id + "/events").done(function(data) {
-                   var cleanedEvents = data.map(function(e) {
+                    var cleanedEvents = data.map(function(e) {
                        return {title: e.eventName, start: e.from.substring(0, 19)}
                    });
 
                     setupCalendar(cleanedEvents);
+
+                }).fail(function(failure) {
+                    console.log("get events failure: [" + failure.status + "]: " + failure.responseText);
                 });
 
             });
@@ -52,19 +58,17 @@
     }
 
     #calendar {
-        max-width: 900px;
+        /* max-width: 1000px; */
         margin: 0 auto;
     }
 
-    #eventandcalendar {
-        display: inline-flex;
-    }
+
 
     </style>
 </head>
 
 <div id="top">
-<h1>user page: @user.username</h1><a href="/user/logout">Log out</a>
+    <p><span style="font-size: 2em;">user page: @user.username</span> [<a href="/user/logout">Log out</a>]</p>
 </div>
 
 <div id="setgroup">
@@ -85,7 +89,7 @@
 </div>
 
     <div id="eventandcalendar">
-    <div id="add-event">
+    @* <div id="add-event">
         <h1>Add event</h1>
 
         @form(action = routes.UserController.addEvent) {
@@ -95,18 +99,18 @@
             @inputText(eventForm("fromClock"))
             @inputDate(eventForm("to"))
             @inputText(eventForm("toClock"))
-            @* @inputText(eventForm("groupId")) *@
+            @* @inputText(eventForm("groupId"))
 
             <input type="hidden" id="groupId" name="groupId" value='@user.groupId'>
 
             @* @inputPassword(eventForm("password"))
             @checkbox(registerForm("isadmin"))
-            @inputText(registerForm("groupid")) *@
+            @inputText(registerForm("groupid"))
 
             <input type="submit" value="add event" />
         }
 
-    </div>
+    </div> *@
 
     <div id="calendar"></div>
 

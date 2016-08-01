@@ -86,21 +86,7 @@ class BaseController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
   }
 
   def test = Action {
-    val events = (1 to 6).map(
-      i => {
-        val date = DateTime.now.plusDays(i)
-        EventWithTimeStamp(None, "pick up child", date, Some(date.plusDays(i + 1)), Some(2))
-      }
-    )
-
-    events.map(
-      ewts => Event(None, ewts.eventName, ewts.from.getMillis, ewts.to.get.getMillis, ewts.groupId)
-    ).foreach(
-      event => userDao.addEvent(event)
-    )
-
-    Ok("check if events where added")
-
+    Ok("test")
 
   }
 

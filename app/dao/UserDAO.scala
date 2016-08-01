@@ -22,12 +22,31 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
 
   import driver.api._
 
+
   private val Users = TableQuery[UsersTable]
   private val Groups = TableQuery[GroupsTable]
   private val Events = TableQuery[EventsTable]
 
+  db.run(DBIO.seq(
+    Groups.schema.create,
+    Events.schema.create,
+    Users.schema.create
+  )).onFailure{ case ex => println(ex) }
+
   def setup: Unit = {
-    db.run(Events.schema.create).onFailure{ case ex => println(ex) }
+    /* db.run(DBIO.seq(
+      Events.schema.drop,
+      Groups.schema.drop,
+      Events.schema.drop
+    )).onFailure{ case ex => println(ex) } */
+
+    db.run(DBIO.seq(
+      Groups.schema.create,
+      Events.schema.create,
+      Users.schema.create
+    )).onFailure{ case ex => println(ex) }
+
+
   }
 
   def addEvent(event: Event): Future[Option[Int]] = {
@@ -126,7 +145,7 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
 
   private class UsersTable(tag: Tag) extends Table[User](tag, "user") {
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
-    def username = column[String]("username", O.SqlType("VARCHAR(50)"))
+    def username = column[String]("username", O.SqlType("VARCHAR(100)"))
     def password = column[String]("password")
     def admin = column[Option[Boolean]]("isadmin")
 
@@ -140,9 +159,11 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
 
   private class GroupsTable(tag: Tag) extends Table[Group](tag, "group") {
     def id = column[Option[Int]]("id", O.PrimaryKey, O.AutoInc)
-    def groupName = column[String]("group_name")
+    def groupName = column[String]("group_name", O.SqlType("VARCHAR(100)"))
 
     override def * = (id, groupName) <> (Group.tupled, Group.unapply)
+
+    def idxGroupName = index("idx_groupName", groupName, unique = true)
   }
 
   private class EventsTable(tag: Tag) extends Table[Event](tag, "event") {

@@ -1,0 +1,25 @@
+#TODO
+
+/* event rest */
+GET PUT POST DELETE
+
+/* user rest */
+GET PUT POST DELETE (inactivate)
+
+/* group rest */
+GET PUT POST DELETE (inactivate)
+
+* snygga till lite kod {
+    ta bort konstiga tempmappern
+    kan man splitta model deklarationerna för slick?
+}
+
+* jobba på javascript-kalendern {
+    ta bort/ändra event onclick på den
+    onclick tom ruta lägg till event
+    kan man ha en bakgrundsfärg för en pågående kurs typ?
+}
+
+* form för att lägga till ett event nånstans runt kalendern
+
+
