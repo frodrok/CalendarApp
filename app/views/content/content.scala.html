@@ -20,7 +20,7 @@
 
     <div class="login">
         <h1>login</h1>
-    @form(action = routes.BaseController.login) {
+    @form(action = routes.BaseController.login, 'id -> "loginForm") {
 
         @helper.inputText(loginForm("username"))
 

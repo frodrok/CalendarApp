@@ -8,15 +8,19 @@ import org.joda.time.DateTime
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.libs.json.Json
+import play.api.libs.ws.{WSBody, WSClient, WSRequest, WSResponse}
 import play.api.mvc.{Action, Controller}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 
-class BaseController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) extends Controller with I18nSupport {
+class BaseController @Inject()(val messagesApi: MessagesApi,
+                               userDao: UserDAO,
+                               ws: WSClient) extends Controller with I18nSupport {
 
   val registerUserForm: Form[UserRegisterData] = Form(
     mapping(
@@ -53,19 +57,26 @@ class BaseController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
   }
 
-  def login = Action { implicit request =>
+  /* login with json */
+  def login = Action.async { implicit request =>
     loginUserForm.bindFromRequest.fold(
       formWithErrors => {
-        Ok("loginform error")
+        Future(Redirect("/"))
       },
       userData => {
-        val user = User(0, userData.username, userData.password)
 
-        val dbUser = Await.result(userDao.getUserByUsername(user.username), Duration.Inf)
+        val data = Json.obj(
+          "username" -> userData.username,
+          "password" -> userData.password
+        )
 
-        if (loginUser(user, dbUser))
-          Redirect("/user").withSession("connected" -> dbUser.username)
-        else BadRequest("login failed")
+        val ar: Future[WSResponse] = ws.url("http://83.227.85.94:9000/validateuser").withMethod("GET").withBody(data).get()
+
+        ar.map( ar => if (ar.status == 200) {
+          Redirect("/user").withSession("connected" -> userData.username) } else {
+          BadRequest("login failed")
+        })
+
       }
     )
   }
