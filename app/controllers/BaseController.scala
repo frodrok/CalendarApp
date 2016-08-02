@@ -3,12 +3,13 @@ package controllers
 import javax.inject.Inject
 
 import dao.UserDAO
-import model.{Event, Group, User}
+import model._
 import org.joda.time.DateTime
+import play.api.Logger
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsPath, Json, Reads}
 import play.api.libs.ws.{WSBody, WSClient, WSRequest, WSResponse}
 import play.api.mvc.{Action, Controller}
 
@@ -16,16 +17,20 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import play.api.libs.functional.syntax._
 
 
 class BaseController @Inject()(val messagesApi: MessagesApi,
                                userDao: UserDAO,
                                ws: WSClient) extends Controller with I18nSupport {
 
+  val TITLE = "YHC3L kalender app"
+  val URL = "http://83.227.85.94:9000"
+
   val registerUserForm: Form[UserRegisterData] = Form(
     mapping(
-      "username" -> text,
-      "password" -> text,
+      "username" -> nonEmptyText(minLength = 5).verifying("Username is already taken", username => checkUsernameAvailable(username)),
+      "password" -> nonEmptyText(minLength = 8),
       "isadmin" -> boolean,
       "groupid" -> optional(number)
     )(UserRegisterData.apply)(UserRegisterData.unapply)
@@ -33,26 +38,49 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
 
   val loginUserForm: Form[UserFormData] = Form(
     mapping(
-      "username" -> text,
-      "password" -> text
-    )(UserFormData.apply)(UserFormData.unapply)
+      "username" -> nonEmptyText,
+      "password" -> nonEmptyText
+    )(UserFormData.apply)(UserFormData.unapply) verifying("Username or password incorrect", userFormData => checkLoginWithServer(userFormData.username, userFormData.password))
   )
 
   def index = Action { implicit request =>
-    Ok(views.html.index("YH3CL kalender app")(registerUserForm)(loginUserForm))
+    Ok(views.html.index(TITLE)(registerUserForm)(loginUserForm))
   }
 
-  def register = Action { implicit request =>
+  def register = Action.async { implicit request =>
     registerUserForm.bindFromRequest.fold(
       formWithErrors => {
-        println(formWithErrors)
-        Ok("registerform error")
+        Future(BadRequest(views.html.index(TITLE)(formWithErrors)(loginUserForm)))
       },
       userData => {
-        val newUser = User(0, userData.username, userData.password, Some(userData.isAdmin), userData.groupId)
+        /* dbcode val newUser = User(0, userData.username, userData.password, Some(userData.isAdmin), userData.groupId)
         userDao.add(newUser).onFailure { case ex => println("could not save user: " + ex.getMessage)}
-        Redirect("/")
+        Redirect("/") */
+
+        //val ar: Future[WSResponse] = ws.url(URL + "/validateuser").withMethod("GET").withBody(data).get()
+
+        val payload = Json.obj(
+          "username" -> userData.username,
+          "password" -> userData.password,
+          "admin" -> userData.isAdmin
+        )
+
+        var send: Future[WSResponse] = ws.url(URL + "/user").post(payload)
+
+        send.map {
+          response => {
+            Logger.debug(response.toString)
+
+            if (response.status == 201) {
+              Redirect("/user").withSession("connected" -> userData.username)
+            } else {
+              Ok(response.status.toString)
+            }
+          }
+        }
+
       }
+
     )
 
   }
@@ -61,24 +89,66 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
   def login = Action.async { implicit request =>
     loginUserForm.bindFromRequest.fold(
       formWithErrors => {
-        Future(Redirect("/"))
+        Future(BadRequest(views.html.index(TITLE)(registerUserForm)(formWithErrors)))
       },
       userData => {
-
-        val data = Json.obj(
-          "username" -> userData.username,
-          "password" -> userData.password
-        )
-
-        val ar: Future[WSResponse] = ws.url("http://83.227.85.94:9000/validateuser").withMethod("GET").withBody(data).get()
-
-        ar.map( ar => if (ar.status == 200) {
-          Redirect("/user").withSession("connected" -> userData.username) } else {
-          BadRequest("login failed")
-        })
-
+          Future(Redirect("/user").withSession("connected" -> userData.username))
       }
     )
+  }
+
+  implicit val jsonUserReads: Reads[JsonUser] = (
+    (JsPath \ "username").read[String] and
+      (JsPath \ "password").readNullable[String]
+    )(JsonUser.apply _)
+
+  /* implicit val jsonUsersReads: Reads[JsonUsers] = (
+    (JsPath \ "result").read[List[JsonUser]]
+    )(JsonUsers.apply _) */
+
+
+  private def checkUsernameAvailable(username: String): Boolean = {
+    val response = ws.url(URL + "/users").get()
+
+    /* val userList: List[JsonUser] = Await.result(response.map {
+      response => {
+        val json = Json.parse(response.json.toString())
+
+        json.validate[List[JsonUser]]
+      }, 3.seconds)
+    } */
+
+      val jsonUserList = Json.parse(Await.result(response, 3.seconds).json.toString())
+    jsonUserList.validate[List[JsonUser]].fold(
+      error => {
+        throw new JsonException("Could not parse retrieved json in basecontroller.checkusernameavailable")
+      },
+      two => {
+        val userOption = two.filter(_.username == username).headOption
+        userOption match {
+          case Some(user) => {
+            false
+          }
+          case None => {
+            true
+          }
+        }
+      }
+    )
+
+  }
+
+  case class JsonException(s: String) extends Exception
+
+  private def checkLoginWithServer(username: String, password: String): Boolean = {
+    val data = Json.obj(
+      "username" -> username,
+      "password" -> password
+    )
+
+    val ar: Future[WSResponse] = ws.url(URL + "/validateuser").withMethod("GET").withBody(data).get()
+
+    Await.result(ar, 3.seconds).status == 200
   }
 
   private def loginUser(user: User, dbUser: User): Boolean = {

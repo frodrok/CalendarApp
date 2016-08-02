@@ -64,7 +64,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
     if (username.isDefined) {
       val user = Await.result(userDao.getUserByUsername(username.get), 3.seconds)
-      Ok(views.html.user.base(user, allGroups)(addEventform))
+      Ok(views.html.user.base(user, allGroups))
     } else {
       BadRequest(views.html.error("go log in bitch"))
     }
@@ -73,7 +73,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
   def addEvent = Action { implicit request =>
 
-    addEventform.bindFromRequest.fold(
+    /* addEventform.bindFromRequest.fold(
       formErrors => {
         val username = request.session.get("connected").headOption
 
@@ -92,7 +92,8 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
         Redirect("/user")
       }
-    )
+    ) */
+    Ok("not implemented")
 
   }
 

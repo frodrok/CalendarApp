@@ -5,7 +5,7 @@
 <div class="register">
 
 <h1>Register</h1>
-@form(action = routes.BaseController.register) {
+@form(action = routes.BaseController.register()) {
 
     @inputText(registerForm("username"))
 
@@ -20,13 +20,21 @@
 
     <div class="login">
         <h1>login</h1>
-    @form(action = routes.BaseController.login, 'id -> "loginForm") {
+    @form(action = routes.BaseController.login()) {
 
-        @helper.inputText(loginForm("username"))
+        @inputText(loginForm("username"))
 
-        @helper.inputPassword(loginForm("password"))
+        @inputPassword(loginForm("password"))
 
         <input type="submit" value="login" />
 
     }
     </div>
+
+@if(loginForm.hasGlobalErrors) {
+    <ul>
+    @for(error <- loginForm.globalErrors) {
+        <li>@Messages(error.messages, error.args)</li>
+    }
+    </ul>
+}
