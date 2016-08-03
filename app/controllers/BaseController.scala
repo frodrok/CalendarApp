@@ -65,7 +65,7 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
           "admin" -> userData.isAdmin
         )
 
-        var send: Future[WSResponse] = ws.url(URL + "/user").post(payload)
+        var send: Future[WSResponse] = ws.url(URL + "/users").post(payload)
 
         send.map {
           response => {
@@ -97,15 +97,18 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
     )
   }
 
+  /* old reads switch if new one doesnt work
   implicit val jsonUserReads: Reads[JsonUser] = (
     (JsPath \ "username").read[String] and
       (JsPath \ "password").readNullable[String]
+    )(JsonUser.apply _) */
+
+  implicit val jsonUserRead: Reads[JsonUser] = (
+    (JsPath \ "username").read[String] and
+      (JsPath \ "password").readNullable[String] and
+      (JsPath \ "admin").readNullable[Boolean] and
+      (JsPath \ "groupId").readNullable[Int]
     )(JsonUser.apply _)
-
-  /* implicit val jsonUsersReads: Reads[JsonUsers] = (
-    (JsPath \ "result").read[List[JsonUser]]
-    )(JsonUsers.apply _) */
-
 
   private def checkUsernameAvailable(username: String): Boolean = {
     val response = ws.url(URL + "/users").get()
@@ -118,10 +121,11 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
       }, 3.seconds)
     } */
 
-      val jsonUserList = Json.parse(Await.result(response, 3.seconds).json.toString())
+    /* wait for result for 5 seconds because it crashed on first run */
+    val jsonUserList = Json.parse(Await.result(response, 5.seconds).json.toString())
     jsonUserList.validate[List[JsonUser]].fold(
       error => {
-        throw new JsonException("Could not parse retrieved json in basecontroller.checkusernameavailable")
+        throw JsonException("Could not parse retrieved json in basecontroller.checkusernameavailable")
       },
       two => {
         val userOption = two.filter(_.username == username).headOption
@@ -138,6 +142,10 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
 
   }
 
+  def getURL: String = {
+    URL
+  }
+
   case class JsonException(s: String) extends Exception
 
   private def checkLoginWithServer(username: String, password: String): Boolean = {
@@ -148,7 +156,7 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
 
     val ar: Future[WSResponse] = ws.url(URL + "/validateuser").withMethod("GET").withBody(data).get()
 
-    Await.result(ar, 3.seconds).status == 200
+    Await.result(ar, 5.seconds).status == 200
   }
 
   private def loginUser(user: User, dbUser: User): Boolean = {

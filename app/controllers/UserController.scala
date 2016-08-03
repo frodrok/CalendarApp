@@ -4,8 +4,9 @@ package controllers
 import javax.inject.Inject
 
 import dao.UserDAO
-import model.{Event, User, UserHasNoGroupException, UserNotFoundException}
+import model._
 import org.joda.time.DateTime
+import play.api.Logger
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -15,6 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import play.api.libs.json._
+import play.api.libs.ws.{WSClient, WSResponse}
 
 /* import play.api.Play.current */
 import play.api.i18n.Messages.Implicits._
@@ -24,7 +26,10 @@ import scala.concurrent.duration._
 case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime, to: Option[DateTime], groupId: Option[Int])
 case class TempEvent(eventName: String, from: String, groupId: Int)
 
-class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) extends Controller with I18nSupport{
+class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
+                               ws: WSClient) extends Controller with I18nSupport{
+
+  val URL = "http://83.227.85.94:9000"
 
   implicit val eventWrites = new Writes[EventWithTimeStamp] {
     def writes(event: EventWithTimeStamp) = Json.obj(
@@ -63,13 +68,41 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
     val username = request.session.get("connected").headOption
 
     if (username.isDefined) {
-      val user = Await.result(userDao.getUserByUsername(username.get), 3.seconds)
+      // val user = Await.result(userDao.getUserByUsername(username.get), 3.seconds)
+      val jsonUser: JsonUser = getJsonUserFromServer(username.get)
+
+      val user = User(0, jsonUser.username, jsonUser.password.get, jsonUser.admin, jsonUser.groupId)
+
       Ok(views.html.user.base(user, allGroups))
     } else {
-      BadRequest(views.html.error("go log in bitch"))
+      BadRequest(views.html.error("no session found, go log in"))
     }
-
   }
+
+  implicit val jsonUserRead: Reads[JsonUser] = (
+    (JsPath \ "username").read[String] and
+      (JsPath \ "password").readNullable[String] and
+      (JsPath \ "admin").readNullable[Boolean] and
+      (JsPath \ "groupId").readNullable[Int]
+    )(JsonUser.apply _)
+
+  private def getJsonUserFromServer(username: String): JsonUser = {
+    val response: Future[WSResponse] = ws.url(URL + "/users/username/" + username).withMethod("GET").get()
+
+    val jsonUserList = Json.parse(Await.result(response, 5.seconds).json.toString())
+    jsonUserList.validate[JsonUser].fold(
+      errors => {
+        throw new JsonException("wadafaka")
+      },
+      jsonUser => {
+        // JsonUser(jsonUser.username, jsonUser.password, jsonUser.admin, jsonUser.groupId)
+        jsonUser
+      }
+    )
+  }
+
+
+
 
   def addEvent = Action { implicit request =>
 
@@ -112,6 +145,11 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
           long => Redirect("/user")
         }
       }
+      case None => {
+        Logger.debug("lolwut")
+        Future(Ok("i am completely out of the loop"))
+      }
+
     }
 
   }
@@ -169,6 +207,9 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO) e
 
     )
   }
+
+  case class JsonException(s: String) extends Exception
+
 }
 
 case class addEventFormData(eventName: String, from: DateTime, to: DateTime, fromClock: Int, toClock: Int, groupId: Int)

@@ -12,6 +12,6 @@ case class UserNotFoundException(s: String) extends Exception
 
 case class UserHasNoGroupException(s: String) extends Exception
 
-case class JsonUser(username: String, password: Option[String])
+case class JsonUser(username: String, password: Option[String], admin: Option[Boolean], groupId: Option[Int])
 case class JsonUsers(users: List[JsonUser])
 

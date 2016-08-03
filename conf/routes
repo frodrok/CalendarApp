@@ -6,8 +6,6 @@
 #GET     /                           controllers.HomeController.index
 GET /           controllers.BaseController.index
 GET /setup      controllers.BaseController.setup
-GET /users      controllers.BaseController.getUsers
-GET /test       controllers.BaseController.test
 
 # An example controller showing how to use dependency injection
 GET     /count                      controllers.CountController.count

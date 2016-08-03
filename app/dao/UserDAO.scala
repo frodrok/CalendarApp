@@ -27,11 +27,11 @@ class UserDAO @Inject()(@NamedDatabase("msql") val dbConfigProvider: DatabaseCon
   private val Groups = TableQuery[GroupsTable]
   private val Events = TableQuery[EventsTable]
 
-  db.run(DBIO.seq(
+   /* db.run(DBIO.seq(
     Groups.schema.create,
     Events.schema.create,
     Users.schema.create
-  )).onFailure{ case ex => println(ex) }
+  )).onFailure{ case ex => println(ex) } */
 
   def setup: Unit = {
     /* db.run(DBIO.seq(
