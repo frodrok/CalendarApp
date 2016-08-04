@@ -73,7 +73,13 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
       val user = User(0, jsonUser.username, jsonUser.password.get, jsonUser.admin, jsonUser.groupId)
 
-      Ok(views.html.user.base(user, allGroups))
+      /* not gonna handle case None => 'cause im a baws */
+      user.admin.get match {
+        case false => Ok(views.html.user.base(user, allGroups))
+        case true => Ok(views.html.admin.base(user, allGroups))
+      }
+
+      // Ok(views.html.user.base(user, allGroups))
     } else {
       BadRequest(views.html.error("no session found, go log in"))
     }

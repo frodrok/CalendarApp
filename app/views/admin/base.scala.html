@@ -1,0 +1,54 @@
+@(user: model.User, groups: Seq[model.Group], events: Seq[model.Event])(implicit messages: Messages)
+
+<html>
+    <head>
+        <link href='@routes.Assets.versioned("stylesheets/fullcalendar.css")' rel="stylesheet">
+        <script src='@routes.Assets.versioned("javascripts/lib/moment.min.js")'></script>
+        <script src='@routes.Assets.versioned("javascripts/lib/jquery-3.0.0.min.js")'></script>
+        <script src='@routes.Assets.versioned("javascripts/lib/fullcalendar.min.js")'></script>
+        <script src="@routes.Assets.versioned("javascripts/hello.js")" type="text/javascript"></script>
+
+        <script>
+            $(document).ready(function() {
+
+                var menu = $("#menu");
+
+                menu.find("ul li").css("display", "inline");
+                menu.find("ul li").hover(function() {
+                    $(this).css({"text-decoration": "underline", "cursor": "pointer"});
+                }, function() {
+                    $(this).css("text-decoration", "none");
+                });
+
+                menu.find("li").click(function(e) {
+                    // console.log(e.target().innerHTML);
+                    console.log(e.target.innerHTML);
+                    $("#content").html("<div>hey now hey now" + e + "</div>");
+                    setupNewCalendar($("#calendar"), []);
+                });
+
+                menu.find("li:first").click();
+            })
+        </script>
+    </head>
+
+    <body>
+
+        <p><span style="font-size: 2em;">admin page: @user.username</span> [<a href="/user/logout">Log out</a>]</p>
+
+        <div id="menu">
+            <ul>
+                <li>Calendar</li>
+                <li >Administrator</li>
+            </ul>
+        </div>
+
+        <div id="content">
+            <div id="calendar">
+
+            </div>
+
+            <span>is this after calendar??</span>
+        </div>
+    </body>
+</html>

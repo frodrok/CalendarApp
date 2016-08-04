@@ -82,7 +82,7 @@
 
     @form(routes.UserController.setGroup) {
         <select name="group">
-            @groups.map { flat => <option value='@flat.id'>@flat.id - @flat.groupName</option> }
+            @groups.map { group => <option value='@group.id'>@group.id - @group.groupName</option> }
         </select>
         <input type="submit" value="Set group" />
     }
