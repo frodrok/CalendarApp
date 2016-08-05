@@ -1,4 +1,4 @@
-@(user: model.User, groups: Seq[model.Group])(implicit messages: Messages)
+@(user: model.User, groups: Seq[model.Group], events: Seq[model.JsonEvent])(implicit messages: Messages)
 
 @import helper._
 
@@ -31,20 +31,8 @@
             }
 
             $(document).ready(function() {
-
                 console.log(@user.id);
-
-                $.getJSON("http://localhost:9000/user/" + @user.id + "/events").done(function(data) {
-                    var cleanedEvents = data.map(function(e) {
-                       return {title: e.eventName, start: e.from.substring(0, 19)}
-                   });
-
-                    setupCalendar(cleanedEvents);
-
-                }).fail(function(failure) {
-                    console.log("get events failure: [" + failure.status + "]: " + failure.responseText);
-                });
-
+                console.log(@events)
             });
 
     </script>
@@ -115,3 +103,6 @@
     <div id="calendar"></div>
 
     </div>
+
+    <h2>events</h2>
+    @events.map { event => <h3>@event.eventName</h3> }

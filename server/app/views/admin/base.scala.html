@@ -1,4 +1,4 @@
-@(user: model.User, groups: Seq[model.Group], events: Seq[model.Event])(implicit messages: Messages)
+@(user: model.User, groups: Seq[model.Group], events: Seq[model.JsonEvent])(implicit environment: play.api.Environment, messages: Messages)
 
 <html>
     <head>
@@ -28,8 +28,19 @@
                 });
 
                 menu.find("li:first").click();
+
+                @* generating javascript from twirl template variables coming from scala fuck this is too deep *@
+                @if(events.length < 1) {
+                    var toodeep = "no events found";
+                } else {
+                    var toodeep = events
+                }
+
+                console.log(toodeep);
             })
         </script>
+
+        @* @playscalajs.html.scripts("client") *@
     </head>
 
     <body>

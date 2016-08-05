@@ -1,3 +1,4 @@
+
 import sbt.Project.projectToRef
 
 name := """scalaapp"""
@@ -49,10 +50,18 @@ lazy val client = (project in file("client")).settings(
   persistLauncher := true,
   persistLauncher in Test := false,
   libraryDependencies ++= Seq(
-    "org.scala-js" %%% "scalajs-dom" % "0.8.0"
+    "org.scala-js" %%% "scalajs-dom" % "0.8.0",
+    "be.doeraene" %%% "scalajs-jquery" % "0.9.0"
   )
+
+//  skip in packageJSDependencies := false,
+//  jsDependencies += "org.webjars" % "jquery" % "3.0.0" / "Jquery.js"
+//  jsDependencies += "org.webjars" % "jquery" % "3.0.0"
+
+  // libraryDependencies += "be.doeraene" %%% "scalajs-jquery" % "0.9.0"
 ).enablePlugins(ScalaJSPlugin, ScalaJSPlay).
   dependsOn(sharedJs)
+
 
 lazy val shared = (crossProject.crossType(CrossType.Pure) in file("shared")).
   settings(scalaVersion := scalaV).
@@ -62,4 +71,5 @@ lazy val sharedJvm = shared.jvm
 lazy val sharedJs = shared.js
 
 // loads the Play project at sbt startup
+// set scalaJSUseRhino in Global := false
 onLoad in Global := (Command.process("project server", _: State)) compose (onLoad in Global).value

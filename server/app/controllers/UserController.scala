@@ -6,7 +6,7 @@ import javax.inject.Inject
 import dao.UserDAO
 import model._
 import org.joda.time.DateTime
-import play.api.Logger
+import play.api.{Environment, Logger}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -26,7 +26,8 @@ case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime
 case class TempEvent(eventName: String, from: String, groupId: Int)
 
 class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
-                               ws: WSClient) extends Controller with I18nSupport{
+                               ws: WSClient,
+                               implicit val environment: Environment) extends Controller with I18nSupport{
 
   val URL = "http://83.227.85.94:9000"
 
@@ -39,16 +40,13 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
     )
   }
 
-  implicit val eventReads: Reads[TempEvent] = (
+  implicit val eventReads: Reads[JsonEvent] = (
+    (JsPath \ "id").readNullable[Int] and
     (JsPath \ "title").read[String] and
       (JsPath \ "from").read[String] and
+      (JsPath \ "to").readNullable[String] and
       (JsPath \ "groupId").read[Int]
-  )(TempEvent.apply _)
-
-  /* implicit val placeReads: Reads[Place] = (
-    (JsPath \ "name").read[String] and
-      (JsPath \ "location").read[Location]
-    )(Place.apply _) */
+  )(JsonEvent.apply _)
 
   val addEventform: Form[addEventFormData] = Form(
     mapping(
@@ -70,13 +68,18 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
       // val user = Await.result(userDao.getUserByUsername(username.get), 3.seconds)
       val jsonUser: JsonUser = getJsonUserFromServer(username.get)
 
-      val user = User(0, jsonUser.username, jsonUser.password.get, jsonUser.admin, jsonUser.groupId)
+      val userId = jsonUser.id match {
+        case None => 0
+        case Some(identityNumber) => identityNumber
+      }
 
-      val events: Seq[Event] = Seq.empty
+      val user = User(userId, jsonUser.username, jsonUser.password.get, jsonUser.admin, jsonUser.groupId)
+
+      val events: Seq[JsonEvent] = fetchEvents(user.id.toInt)
 
       /* not gonna handle case None => 'cause im a baws */
       user.admin.get match {
-        case false => Ok(views.html.user.base(user, allGroups))
+        case false => Ok(views.html.user.base(user, allGroups, events))
         case true => Ok(views.html.admin.base(user, allGroups, events))
       }
 
@@ -86,7 +89,25 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
     }
   }
 
+  def fetchEvents(userId: Int): Seq[JsonEvent] = {
+
+    Logger.debug("fetching events for userId: " + userId)
+
+    val jsonString: String = Await.result(ws.url(URL + "/users/" + userId + "/events").get(), 5.seconds).body
+
+    val asJson = Json.parse(jsonString)
+
+    asJson.validate[Seq[JsonEvent]].fold(
+      errors => {
+        Logger.warn("json errors?")
+        Seq.empty
+      },
+      jsonEventSeq => jsonEventSeq
+    )
+  }
+
   implicit val jsonUserRead: Reads[JsonUser] = (
+    (JsPath \ "id").readNullable[Int] and
     (JsPath \ "username").read[String] and
       (JsPath \ "password").readNullable[String] and
       (JsPath \ "admin").readNullable[Boolean] and
@@ -107,10 +128,6 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
       }
     )
   }
-
-
-
-
   def addEvent() = Action { implicit request =>
 
     /* addEventform.bindFromRequest.fold(
@@ -186,7 +203,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
     }
 
   def saveEvent(userId: Int) = Action(BodyParsers.parse.json) { request =>
-    val eventResult = request.body.validate[TempEvent]
+    /* val eventResult = request.body.validate[TempEvent]
     eventResult.fold(
       errors => {
         BadRequest(Json.obj("status" ->"KO", "message" -> JsError.toJson(errors)))
@@ -212,10 +229,12 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
       }
 
-    )
+    ) */
+    Ok("not implemented")
   }
 
   case class JsonException(s: String) extends Exception
+
 
 }
 

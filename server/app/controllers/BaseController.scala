@@ -5,7 +5,7 @@ import javax.inject.Inject
 import dao.UserDAO
 import model._
 import org.joda.time.DateTime
-import play.api.Logger
+import play.api.{Environment, Logger}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -22,7 +22,8 @@ import play.api.libs.functional.syntax._
 
 class BaseController @Inject()(val messagesApi: MessagesApi,
                                userDao: UserDAO,
-                               ws: WSClient) extends Controller with I18nSupport {
+                               ws: WSClient,
+                               implicit val environment: Environment) extends Controller with I18nSupport {
 
   val TITLE = "YHC3L kalender app"
   val URL = "http://83.227.85.94:9000"
@@ -103,7 +104,9 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
       (JsPath \ "password").readNullable[String]
     )(JsonUser.apply _) */
 
+  /* case class JsonUser(id: Option[Int], username: String, password: Option[String], admin: Option[Boolean], groupId: Option[Int]) */
   implicit val jsonUserRead: Reads[JsonUser] = (
+    (JsPath \ "id").readNullable[Int] and
     (JsPath \ "username").read[String] and
       (JsPath \ "password").readNullable[String] and
       (JsPath \ "admin").readNullable[Boolean] and
@@ -170,7 +173,7 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
   }
 
   def setup = Action {
-    userDao.setup
+    // userDao.setup
     Ok("db initiated")
   }
 
