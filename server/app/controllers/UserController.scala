@@ -10,17 +10,16 @@ import play.api.Logger
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
-import play.api.mvc.{Action, BodyParsers, Controller, Result}
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
 import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSResponse}
+import play.api.mvc.{Action, BodyParsers, Controller}
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
 
 /* import play.api.Play.current */
-import play.api.i18n.Messages.Implicits._
 import play.api.libs.functional.syntax._
+
 import scala.concurrent.duration._
 
 case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime, to: Option[DateTime], groupId: Option[Int])
@@ -65,7 +64,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
   val allGroups = Await.result(userDao.allGroups, 3.seconds)
 
   def userPage = Action { request =>
-    val username = request.session.get("connected").headOption
+    val username = request.session.get("connected")
 
     if (username.isDefined) {
       // val user = Await.result(userDao.getUserByUsername(username.get), 3.seconds)
@@ -73,10 +72,12 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
       val user = User(0, jsonUser.username, jsonUser.password.get, jsonUser.admin, jsonUser.groupId)
 
+      val events: Seq[Event] = Seq.empty
+
       /* not gonna handle case None => 'cause im a baws */
       user.admin.get match {
         case false => Ok(views.html.user.base(user, allGroups))
-        case true => Ok(views.html.admin.base(user, allGroups))
+        case true => Ok(views.html.admin.base(user, allGroups, events))
       }
 
       // Ok(views.html.user.base(user, allGroups))
@@ -98,7 +99,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
     val jsonUserList = Json.parse(Await.result(response, 5.seconds).json.toString())
     jsonUserList.validate[JsonUser].fold(
       errors => {
-        throw new JsonException("wadafaka")
+        throw JsonException("wadafaka")
       },
       jsonUser => {
         // JsonUser(jsonUser.username, jsonUser.password, jsonUser.admin, jsonUser.groupId)
@@ -110,7 +111,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
 
 
-  def addEvent = Action { implicit request =>
+  def addEvent() = Action { implicit request =>
 
     /* addEventform.bindFromRequest.fold(
       formErrors => {
@@ -136,11 +137,11 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
   }
 
-  def setGroup = Action.async { implicit request =>
+  def setGroup() = Action.async { implicit request =>
 
     val groupId = request.body.asFormUrlEncoded.get.head._2.head
 
-    val username = request.session.get("connected").headOption
+    val username = request.session.get("connected")
 
     username match {
       case Some(username) => {
@@ -169,7 +170,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
       val eventsSeq = Await.result(userDao.getEventsForUser(userId), 3.seconds)
 
       val withTimeStamps = eventsSeq.seq.map {
-        event => new EventWithTimeStamp(event.id, event.eventName, new DateTime(event.from), Some(new DateTime(event.to)), event.groupId)
+        event => EventWithTimeStamp(event.id, event.eventName, new DateTime(event.from), Some(new DateTime(event.to)), event.groupId)
       }
 
       val asJson = Json.toJson(withTimeStamps)

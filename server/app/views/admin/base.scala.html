@@ -39,7 +39,7 @@
         <div id="menu">
             <ul>
                 <li>Calendar</li>
-                <li >Administrator</li>
+                <li>Administrator</li>
             </ul>
         </div>
 
@@ -49,6 +49,8 @@
             </div>
 
             <span>is this after calendar??</span>
+
+            @events.map { event => <h4>event.eventName</h4> }
         </div>
     </body>
 </html>
