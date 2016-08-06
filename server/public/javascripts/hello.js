@@ -3,27 +3,6 @@ if (window.console) {
 }
 
 function setupCalendar(calendarObject, events) {
-  if (events.length < 1) {
-    console.log("no events recieved");
-  } else {
-    console.log("setting up calendar with these events: ");
-    events.forEach(console.log.bind(console));
-  }
-
-  $('#calendar').fullCalendar({
-    header: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'month,basicWeek,basicDay'
-    },
-    defaultDate: '2016-08-01',
-    editable: false,
-    eventLimit: true,
-    events: events
-  });
-}
-
-function setupNewCalendar(calendarObject, events) {
 
     /* wierd mapping one variable name */
     /* jquery fullcalendar event object example:
@@ -38,11 +17,38 @@ function setupNewCalendar(calendarObject, events) {
         console.log("no events recieved");
     }
 
+    var today = new Date()
+    console.log(today.toTimeString());
+
     calendarObject.fullCalendar({
         header: {
             left: 'prev,next today',
             center: 'title',
-            right: 'month,basicWeek,basicDay'
+             /*right: 'month,basicWeek,basicDay'*/
+            right: 'month,agendaWeek,agendaDay'
+        },
+        weekends: false,
+        fixedWeekCount: false,
+        selectable: true,
+        selectHelper: true,
+        select: function(start, end, allDay) {
+            var title = prompt('Event Title:');
+            /*
+             if title is enterd calendar will add title and event into fullCalendar.
+             */
+            if (title)
+            {
+                calendarObject.fullCalendar('renderEvent',
+                    {
+                        title: title,
+                        start: start,
+                        end: end,
+                        allDay: allDay
+                    },
+                    true // make the event "stick"
+                );
+            }
+            calendarObject.fullCalendar('unselect');
         },
         defaultDate: '2016-08-06',
         editable: true,

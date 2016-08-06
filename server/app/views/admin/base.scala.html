@@ -3,36 +3,49 @@
 <html>
     <head>
         <link href='@routes.Assets.versioned("stylesheets/fullcalendar.css")' rel="stylesheet">
+        <link href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' rel='stylesheet'>
         <script src='@routes.Assets.versioned("javascripts/lib/moment.min.js")'></script>
         <script src='@routes.Assets.versioned("javascripts/lib/jquery-3.0.0.min.js")'></script>
         <script src='@routes.Assets.versioned("javascripts/lib/fullcalendar.min.js")'></script>
         <script src="@routes.Assets.versioned("javascripts/hello.js")" type="text/javascript"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" type="text/javascript"></script>
 
         <script>
 
-            var url = "http://85.227.189.115:9000";
+            var url = "http://83.227.87.14:9000";
             var userId = @user.id;
             var groupId = @user.groupId.get;
 
             $(document).ready(function() {
 
-                var menu = $("#menu");
+                /*var navbar = $("nav.navbar");
 
-                menu.find("ul li").css("display", "inline");
-                menu.find("ul li").hover(function() {
-                    $(this).css({"text-decoration": "underline", "cursor": "pointer"});
+                navbar.css("background-color", "#000000");*/
+
+                var clickableElements = $("ul#menu li");
+
+                clickableElements.hover(function() {
+                   $(this).css("text-decoration", "underline");
                 }, function() {
                     $(this).css("text-decoration", "none");
                 });
 
-                menu.find("li").click(function(e) {
-                    // console.log(e.target().innerHTML);
-                    console.log(e.target.innerHTML);
-                    var clicked = e.target.innerHTML;
+                clickableElements.click(function(e) {
+
+                    e.preventDefault();
+
+                    $.each(clickableElements, function(e) {
+                       $(this).removeClass("active");
+                    });
+
+                    $(this).addClass("active");
+
+                    var clicked = $(this).text();
+                    console.log(clicked);
                     if (clicked == "Underlings") {
                         getUnderlings(function(data) {
                             var underlingsHtml = data.map(function(obj) {
-                               return "<p>id: " + obj.id + ", username: " + obj.username + "</p>";
+                                return "<p>id: " + obj.id + ", username: " + obj.username + "</p>";
                             });
 
                             $("#content").html(underlingsHtml);
@@ -42,29 +55,16 @@
                         $("#content").html(emptyCal);
 
                         getEvents(function(data) {
-                            setupNewCalendar($("#calendar"), data);
+                            setupCalendar($("#calendar"), data);
                         });
-
+                    } else if (clicked == "Administrator") {
+                        console.log("y u do dis");
                     }
+
+
                 });
 
-                menu.find("li:first").click();
-
-                @* generating javascript from twirl template variables coming from scala fuck this is too deep *@
-                @* @if(events.length < 1) {
-                    var jsEvents = "no events found";
-                } else {
-                    var jsEvents = @events;
-                } *@
-
-
-                $.get( url + "/groups/" + groupId + "/users", function( data ) {
-                    var underlings = data.filter(function(object) {
-                        return object.admin == false;
-                    });
-                    console.log(underlings);
-                });
-
+                clickableElements.first().click();
             });
 
             function getEvents(callback) {
@@ -72,7 +72,7 @@
                     callback(data);
                 }).fail(function(error) {
                     console.log("horror: " + error);
-                })
+                });
 //                $.get(url + "/users/" + userId + "/events",  )
             }
 
@@ -86,40 +86,42 @@
                 });
             }
 
-            /* function handleClick(target) {
-                if (target == "Underlings") {
-                    $("#content").html($("#underlings").clone());
-                    console.log("value of underlings: " + $("#underlings").html());
-                    $("#content #underlings").css("display", "inline");
-                } else if (target == "Calendar") {
-                    $("#content").html("<div id='calendar'></div>");
-                    setupNewCalendar($("#calendar"), []);
-                } else if (target == "Administrator") {
-                    console.log("administrator")
-                } else {
-                    console.log("fallhrtdh in handleclick");
-                }
-            } */
-
-
         </script>
 
         @* if you want scalaJS
             @playscalajs.html.scripts("client")
         *@
+
+        @* some color scheme
+            c7d0d5, 93b1c6, f5f5f5, ff7148, ec583a
+        *@
+        <style>
+            #calendar {
+                max-width: 100em;
+                margin: 0 auto;
+            }
+
+            .fc-view-container { background-color: rgba(255,127,80,0.25)}
+
+            body {
+                background: url('@routes.Assets.versioned("images/cork-wallet.png")');
+            }
+
+            nav.navbar {
+                background-color: #93b1c6;
+                box-shadow: 0px 5px 5px #aaaaaa;
+            }
+
+            li.active {
+                color: #ec583a;
+            }
+
+        </style>
     </head>
 
     <body>
 
-        <p><span style="font-size: 2em;">admin page: @user.username</span> [<a href="/user/logout">Log out</a>]</p>
-
-        <div id="menu">
-            <ul>
-                <li>Calendar</li>
-                <li>Administrator</li>
-                <li>Underlings</li>
-            </ul>
-        </div>
+        @navbar.navbar("YHC3L Kalender", user.username)
 
         <div id="content">
             <div id="calendar">
@@ -127,15 +129,7 @@
             </div>
 
             <span>is this after calendar??</span>
-
-            @events.map { event => <h4>event.eventName</h4> }
         </div>
 
-        @* <div id="underlings" style="display: none">
-            <table>
-                <tr><th>id</th><th>username</th><th>groupid</th></tr>
-                @underlings.map { underling => <tr><td>@underling.id</td><td>@underling.username</td><td>@underling.groupId</td></tr> }
-            </table>
-        </div> *@
     </body>
 </html>

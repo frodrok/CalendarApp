@@ -49,13 +49,13 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
   )
 
   def index = Action { implicit request =>
-    Ok(views.html.index(TITLE)(registerUserForm)(loginUserForm))
+    Ok(views.html.index.index(TITLE)(registerUserForm)(loginUserForm))
   }
 
   def register = Action.async { implicit request =>
     registerUserForm.bindFromRequest.fold(
       formWithErrors => {
-        Future(BadRequest(views.html.index(TITLE)(formWithErrors)(loginUserForm)))
+        Future(BadRequest(views.html.index.index(TITLE)(formWithErrors)(loginUserForm)))
       },
       userData => {
         /* dbcode val newUser = User(0, userData.username, userData.password, Some(userData.isAdmin), userData.groupId)
@@ -94,7 +94,7 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
   def login = Action.async { implicit request =>
     loginUserForm.bindFromRequest.fold(
       formWithErrors => {
-        Future(BadRequest(views.html.index(TITLE)(registerUserForm)(formWithErrors)))
+        Future(BadRequest(views.html.index.index(TITLE)(registerUserForm)(formWithErrors)))
       },
       userData => {
           Future(Redirect("/user").withSession("connected" -> userData.username))
