@@ -2,10 +2,10 @@ package controllers
 
 import javax.inject.Inject
 
-import dao.UserDAO
+import com.typesafe.config.ConfigFactory
 import model._
 import org.joda.time.DateTime
-import play.api.{Environment, Logger}
+import play.api.{Environment, Logger, Play}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -21,12 +21,16 @@ import play.api.libs.functional.syntax._
 
 
 class BaseController @Inject()(val messagesApi: MessagesApi,
-                               userDao: UserDAO,
                                ws: WSClient,
-                               implicit val environment: Environment) extends Controller with I18nSupport {
+                               implicit val environment: Environment,
+                               config: play.api.Configuration) extends Controller with I18nSupport {
 
   val TITLE = "YHC3L kalender app"
-  val URL = "http://83.227.85.94:9000"
+  // val URL = "http://83.227.85.94:9000"
+  val URL: String = config.getString("custom.restAPIURL") match {
+    case None => throw new Exception("String 'restAPIURL' not found in conf")
+    case Some(string) => string
+  }
 
   val registerUserForm: Form[UserRegisterData] = Form(
     mapping(
@@ -98,13 +102,6 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
     )
   }
 
-  /* old reads switch if new one doesnt work
-  implicit val jsonUserReads: Reads[JsonUser] = (
-    (JsPath \ "username").read[String] and
-      (JsPath \ "password").readNullable[String]
-    )(JsonUser.apply _) */
-
-  /* case class JsonUser(id: Option[Int], username: String, password: Option[String], admin: Option[Boolean], groupId: Option[Int]) */
   implicit val jsonUserRead: Reads[JsonUser] = (
     (JsPath \ "id").readNullable[Int] and
     (JsPath \ "username").read[String] and
@@ -113,16 +110,14 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
       (JsPath \ "groupId").readNullable[Int]
     )(JsonUser.apply _)
 
+  implicit val jsonGroupRead: Reads[JsonGroup] = (
+    (JsPath \ "id").readNullable[Int] and
+      (JsPath \ "groupName").read[String] and
+      (JsPath \ "active").readNullable[Boolean]
+    )(JsonGroup.apply _)
+
   private def checkUsernameAvailable(username: String): Boolean = {
     val response = ws.url(URL + "/users").get()
-
-    /* val userList: List[JsonUser] = Await.result(response.map {
-      response => {
-        val json = Json.parse(response.json.toString())
-
-        json.validate[List[JsonUser]]
-      }, 3.seconds)
-    } */
 
     /* wait for result for 5 seconds because it crashed on first run */
     val jsonUserList = Json.parse(Await.result(response, 5.seconds).json.toString())
@@ -145,10 +140,6 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
 
   }
 
-  def getURL: String = {
-    URL
-  }
-
   case class JsonException(s: String) extends Exception
 
   private def checkLoginWithServer(username: String, password: String): Boolean = {
@@ -164,12 +155,6 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
 
   private def loginUser(user: User, dbUser: User): Boolean = {
     dbUser.username == user.username && dbUser.password == user.password
-  }
-
-  def getUsers = Action.async {
-    userDao.allUsers.map(
-      users => Ok(views.html.allusers(users))
-    )
   }
 
   def setup = Action {

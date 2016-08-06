@@ -1,4 +1,4 @@
-@(user: model.User, groups: Seq[model.Group], events: Seq[model.JsonEvent])(implicit environment: play.api.Environment, messages: Messages)
+@(user: model.User, groups: Seq[model.JsonGroup], events: Seq[model.JsonEvent], underlings: Seq[model.JsonUser])(implicit environment: play.api.Environment, messages: Messages)
 
 <html>
     <head>
@@ -9,6 +9,11 @@
         <script src="@routes.Assets.versioned("javascripts/hello.js")" type="text/javascript"></script>
 
         <script>
+
+            var url = "http://85.227.189.115:9000";
+            var userId = @user.id;
+            var groupId = @user.groupId.get;
+
             $(document).ready(function() {
 
                 var menu = $("#menu");
@@ -23,24 +28,85 @@
                 menu.find("li").click(function(e) {
                     // console.log(e.target().innerHTML);
                     console.log(e.target.innerHTML);
-                    $("#content").html("<div>hey now hey now" + e + "</div>");
-                    setupNewCalendar($("#calendar"), []);
+                    var clicked = e.target.innerHTML;
+                    if (clicked == "Underlings") {
+                        getUnderlings(function(data) {
+                            var underlingsHtml = data.map(function(obj) {
+                               return "<p>id: " + obj.id + ", username: " + obj.username + "</p>";
+                            });
+
+                            $("#content").html(underlingsHtml);
+                        });
+                    } else if (clicked == "Calendar") {
+                        var emptyCal = "<div id='calendar'></div>";
+                        $("#content").html(emptyCal);
+
+                        getEvents(function(data) {
+                            setupNewCalendar($("#calendar"), data);
+                        });
+
+                    }
                 });
 
                 menu.find("li:first").click();
 
                 @* generating javascript from twirl template variables coming from scala fuck this is too deep *@
-                @if(events.length < 1) {
-                    var toodeep = "no events found";
+                @* @if(events.length < 1) {
+                    var jsEvents = "no events found";
                 } else {
-                    var toodeep = events
-                }
+                    var jsEvents = @events;
+                } *@
 
-                console.log(toodeep);
-            })
+
+                $.get( url + "/groups/" + groupId + "/users", function( data ) {
+                    var underlings = data.filter(function(object) {
+                        return object.admin == false;
+                    });
+                    console.log(underlings);
+                });
+
+            });
+
+            function getEvents(callback) {
+                $.get( url + "/users/" + userId + "/events", function(data) {
+                    callback(data);
+                }).fail(function(error) {
+                    console.log("horror: " + error);
+                })
+//                $.get(url + "/users/" + userId + "/events",  )
+            }
+
+            function getUnderlings(callback) {
+                $.get( url + "/groups/" + groupId + "/users", function( data ) {
+                    var underlings = data.filter(function(object) {
+                        return object.admin == false;
+                    });
+
+                    callback(underlings);
+                });
+            }
+
+            /* function handleClick(target) {
+                if (target == "Underlings") {
+                    $("#content").html($("#underlings").clone());
+                    console.log("value of underlings: " + $("#underlings").html());
+                    $("#content #underlings").css("display", "inline");
+                } else if (target == "Calendar") {
+                    $("#content").html("<div id='calendar'></div>");
+                    setupNewCalendar($("#calendar"), []);
+                } else if (target == "Administrator") {
+                    console.log("administrator")
+                } else {
+                    console.log("fallhrtdh in handleclick");
+                }
+            } */
+
+
         </script>
 
-        @* @playscalajs.html.scripts("client") *@
+        @* if you want scalaJS
+            @playscalajs.html.scripts("client")
+        *@
     </head>
 
     <body>
@@ -51,6 +117,7 @@
             <ul>
                 <li>Calendar</li>
                 <li>Administrator</li>
+                <li>Underlings</li>
             </ul>
         </div>
 
@@ -63,5 +130,12 @@
 
             @events.map { event => <h4>event.eventName</h4> }
         </div>
+
+        @* <div id="underlings" style="display: none">
+            <table>
+                <tr><th>id</th><th>username</th><th>groupid</th></tr>
+                @underlings.map { underling => <tr><td>@underling.id</td><td>@underling.username</td><td>@underling.groupId</td></tr> }
+            </table>
+        </div> *@
     </body>
 </html>

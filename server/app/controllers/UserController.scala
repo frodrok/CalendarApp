@@ -3,10 +3,9 @@ package controllers
 
 import javax.inject.Inject
 
-import dao.UserDAO
 import model._
 import org.joda.time.DateTime
-import play.api.{Environment, Logger}
+import play.api.{Configuration, Environment, Logger}
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -23,13 +22,13 @@ import play.api.libs.functional.syntax._
 import scala.concurrent.duration._
 
 case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime, to: Option[DateTime], groupId: Option[Int])
-case class TempEvent(eventName: String, from: String, groupId: Int)
 
-class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
+class UserController @Inject()(val messagesApi: MessagesApi,
                                ws: WSClient,
-                               implicit val environment: Environment) extends Controller with I18nSupport{
+                               implicit val environment: Environment,
+                               config: Configuration) extends Controller with I18nSupport{
 
-  val URL = "http://83.227.85.94:9000"
+  val URL = config.getString("custom.restAPIURL").get
 
   implicit val eventWrites = new Writes[EventWithTimeStamp] {
     def writes(event: EventWithTimeStamp) = Json.obj(
@@ -48,6 +47,12 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
       (JsPath \ "groupId").read[Int]
   )(JsonEvent.apply _)
 
+  implicit val jsonGroupRead: Reads[JsonGroup] = (
+    (JsPath \ "id").readNullable[Int] and
+      (JsPath \ "groupName").read[String] and
+      (JsPath \ "active").readNullable[Boolean]
+    )(JsonGroup.apply _)
+
   val addEventform: Form[addEventFormData] = Form(
     mapping(
       "eventName" -> text,
@@ -59,9 +64,42 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
     )(addEventFormData.apply)(addEventFormData.unapply)
   )
 
-  val allGroups = Await.result(userDao.allGroups, 3.seconds)
+   implicit val userWrites = new Writes[JsonUser] {
+    def writes(user: JsonUser) = Json.obj(
+      "id" -> user.id,
+      "username" -> user.username,
+      "password" -> user.password,
+      "admin" -> user.admin,
+      "groupId" -> user.groupId
+    )
+  }
+
+
+  def fetchUnderlings(gId: Int): Seq[JsonUser] = {
+    Await.result(ws.url(URL + "/groups/" + gId + "/users").get().map {
+      response => {
+        if (response.status == 200) {
+          val asJson = Json.parse(response.body)
+          asJson.validate[Seq[JsonUser]].fold(
+            errors => {
+              Logger.warn("No users gotten for groupId: " + gId)
+              Seq.empty
+            },
+            jsonGroupSeq => jsonGroupSeq
+          )
+        } else {
+          Logger.warn("Response[" + response.status + "] in fetchUnderlingse")
+          Seq.empty
+        }
+      }
+    }, 3.seconds)
+  }
 
   def userPage = Action { request =>
+
+    /* TODO: can I make all this asynchronous?? */
+    val allGroups = getAllGroups
+
     val username = request.session.get("connected")
 
     if (username.isDefined) {
@@ -77,16 +115,40 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
       val events: Seq[JsonEvent] = fetchEvents(user.id.toInt)
 
+      val gId = user.groupId match {
+        case None => {
+          Logger.warn("User " + user.id + " has no groupId, fix it")
+          0
+        }
+        case Some(value) => value
+      }
+      val underlings: Seq[JsonUser] = fetchUnderlings(gId).filter(_.admin.get != true)
+
       /* not gonna handle case None => 'cause im a baws */
       user.admin.get match {
         case false => Ok(views.html.user.base(user, allGroups, events))
-        case true => Ok(views.html.admin.base(user, allGroups, events))
+        case true => Ok(views.html.admin.base(user, allGroups, events, underlings))
       }
 
       // Ok(views.html.user.base(user, allGroups))
     } else {
       BadRequest(views.html.error("no session found, go log in"))
     }
+  }
+
+  def getAllGroups: Seq[JsonGroup] = {
+    Logger.debug("fetchin all groups")
+    val jsonString: String = Await.result(ws.url(URL + "/groups").get(), 5.seconds).body
+
+    val asJson = Json.parse(jsonString)
+
+    asJson.validate[Seq[JsonGroup]].fold(
+      errors => {
+        Logger.warn("json errors?")
+        Seq.empty
+      },
+      jsonGroupSeq => jsonGroupSeq
+    )
   }
 
   def fetchEvents(userId: Int): Seq[JsonEvent] = {
@@ -154,7 +216,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
   }
 
-  def setGroup() = Action.async { implicit request =>
+  /* def setGroup() = Action.async { implicit request =>
 
     val groupId = request.body.asFormUrlEncoded.get.head._2.head
 
@@ -176,13 +238,13 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
     }
 
-  }
+  } */
 
   def logout = Action { request =>
     Redirect("/").withNewSession
   }
 
-  def eventsForUserJson(userId: Int) = Action {
+  /* def eventsForUserJson(userId: Int) = Action {
     try {
       val eventsSeq = Await.result(userDao.getEventsForUser(userId), 3.seconds)
 
@@ -231,7 +293,7 @@ class UserController @Inject()(val messagesApi: MessagesApi, userDao: UserDAO,
 
     ) */
     Ok("not implemented")
-  }
+  } */
 
   case class JsonException(s: String) extends Exception
 

@@ -1,4 +1,4 @@
-@(user: model.User, groups: Seq[model.Group], events: Seq[model.JsonEvent])(implicit messages: Messages)
+@(user: model.User, groups: Seq[model.JsonGroup], events: Seq[model.JsonEvent])(implicit messages: Messages)
 
 @import helper._
 
@@ -68,12 +68,12 @@
         - current group: @user.groupId.get }
     </p>
 
-    @form(routes.UserController.setGroup) {
+    @* @form(routes.UserController.setGroup) {
         <select name="group">
             @groups.map { group => <option value='@group.id'>@group.id - @group.groupName</option> }
         </select>
         <input type="submit" value="Set group" />
-    }
+    } *@
 </div>
 
     <div id="eventandcalendar">
