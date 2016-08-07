@@ -10,6 +10,8 @@
         <script src='@routes.Assets.versioned("javascripts/lib/fullcalendar.min.js")'></script>
         <script src="@routes.Assets.versioned("javascripts/hello.js")" type="text/javascript"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" type="text/javascript"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-json/2.5.1/jquery.json.min.js" type="text/javascript"></script>
+
 
         <script>
 
@@ -95,8 +97,42 @@
 
                 });
 
+                $("#saveevents").click(function(e) {
+                   var events = $("#calendar").fullCalendar('clientEvents');
+
+                    /* only saving events which have no id for now */
+                    /* TODO: change event.start and event.end to LONGs instead of DateStrings */
+                    var fixedEvents = events.map(function(event) {
+                        return {"id": event.id, "title": event.title, "from": event.start, "to": event.end, "groupId": groupId}
+                    });
+
+                    var eventsWithoutId = fixedEvents.filter(function(event) {
+                        return event.id == null;
+                    });
+
+                    var asList = $.toJSON(eventsWithoutId);
+
+                    saveEvents(asList, function(e) {
+                           console.log(e);
+                    });
+                });
+
 
             });
+
+            function saveEvents(events, callback) {
+                console.log(events.toString());
+                $.ajax({
+                    url:url + "/eventList",
+                    type:"POST",
+                    data:events,
+                    contentType:"application/json; charset=utf-8",
+                    dataType:"json",
+                    success: function(e) {
+                        callback(e);
+                    }
+                });
+            }
 
             function getEvents(callback) {
                 $.get( url + "/users/" + userId + "/events", function(data) {
@@ -162,6 +198,10 @@
                 display: block;
             }
 
+            .pBorder {
+                border: 1px solid black;
+            }
+
             #calendar {
             display: inline-block;
             }
@@ -175,6 +215,12 @@
                 cursor: pointer;
             }
 
+            #saveevents {
+                font-size: 5em;
+                cursor: pointer;
+                display: inline-flex;
+            }
+
 
         </style>
 
@@ -182,7 +228,10 @@
 
         <div id="content">
             <div id="addevent">
-                +
+                <p class="pBorder">+</p>
+                </div>
+            <div id="saveevents">
+                <p class="pBorder">Save</p>
             </div>
             <div id="calendar">
 
