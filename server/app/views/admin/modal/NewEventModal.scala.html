@@ -1,0 +1,29 @@
+<div id="neweventmodal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title">New event</h4>
+            </div>
+
+            <div class="modal-body">
+                <p>One fine body&hellip;</p>
+                <form id="newEventForm">
+                    <input type="text" name="title" placeholder="Event title" />
+                    <input type="text" name="fromDate" placeholder="2016-08-07" />
+                    <input type="text" name="toDate" placeholder="2016-08-08" />
+                <input type="text" name="fromClock" placeholder="08:00" />
+                <input type="text" name="toClock" placeholder="15:00" />
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" id="saveEventButton" class="btn btn-primary">Save event</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>

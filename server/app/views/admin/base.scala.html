@@ -6,6 +6,7 @@
         <link href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' rel='stylesheet'>
         <script src='@routes.Assets.versioned("javascripts/lib/moment.min.js")'></script>
         <script src='@routes.Assets.versioned("javascripts/lib/jquery-3.0.0.min.js")'></script>
+        <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"   integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="   crossorigin="anonymous"></script>
         <script src='@routes.Assets.versioned("javascripts/lib/fullcalendar.min.js")'></script>
         <script src="@routes.Assets.versioned("javascripts/hello.js")" type="text/javascript"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" type="text/javascript"></script>
@@ -52,7 +53,7 @@
                         });
                     } else if (clicked == "Calendar") {
                         var emptyCal = "<div id='calendar'></div>";
-                        $("#content").html(emptyCal);
+                        $("#content").append(emptyCal);
 
                         getEvents(function(data) {
                             setupCalendar($("#calendar"), data);
@@ -65,6 +66,36 @@
                 });
 
                 clickableElements.first().click();
+                $("#newEventForm input[name='to']").keyup(function(event){
+                    if(event.keyCode == 13){
+                        $("#saveEventButton").click();
+                    }
+                });
+
+                $("#addevent").click(function(e) {
+                    $("#neweventmodal").modal('show');
+                });
+
+                $("button#saveEventButton").click(function(e) {
+
+                    e.preventDefault();
+
+                    var values = {};
+                    $.each($('#newEventForm').serializeArray(), function(i, field) {
+                        values[field.name] = field.value;
+                    });
+
+                    var sendFrom = values["fromDate"] + "T" + values["fromClock"];
+                    var sendTo = values["toDate"] + "T" + values["toClock"];
+
+                    addEventToCalendar($("#calendar"), values["title"], sendFrom, sendTo, false);
+
+                    $("#neweventmodal").modal('hide');
+                    $("#newEventForm")[0].reset();
+
+                });
+
+
             });
 
             function getEvents(callback) {
@@ -96,9 +127,11 @@
             c7d0d5, 93b1c6, f5f5f5, ff7148, ec583a
         *@
         <style>
+
             #calendar {
                 max-width: 100em;
-                margin: 0 auto;
+                margin: 0 25;
+                vertical-align: top;
             }
 
             .fc-view-container { background-color: rgba(255,127,80,0.25)}
@@ -116,20 +149,46 @@
                 color: #ec583a;
             }
 
+
+
+
         </style>
     </head>
 
     <body>
 
+        <style>
+            #content {
+                display: block;
+            }
+
+            #calendar {
+            display: inline-block;
+            }
+
+            #addevent {
+
+                font-size: 10em;
+                /* position: absolute; */
+                display: inline-block;
+                /* margin-top: 5em; */
+                cursor: pointer;
+            }
+
+
+        </style>
+
         @navbar.navbar("YHC3L Kalender", user.username)
 
         <div id="content">
+            <div id="addevent">
+                +
+            </div>
             <div id="calendar">
 
             </div>
-
-            <span>is this after calendar??</span>
         </div>
 
+        @modal.NewEventModal()
     </body>
 </html>
