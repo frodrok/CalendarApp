@@ -1,5 +1,17 @@
 @(brand: String, username: String)
 
+<script>
+    $(document).ready(function() {
+
+        var clickableElements = $("ul#menu li");
+
+        clickableElements.hover(function () {
+            $(this).css("text-decoration", "underline");
+        }, function () {
+            $(this).css("text-decoration", "none");
+        });
+    });
+</script>
 <nav class="navbar navbar-default">
     <div class="container-fluid">
             <!-- Brand and toggle get grouped for better mobile display -->

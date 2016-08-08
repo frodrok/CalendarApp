@@ -8,7 +8,7 @@
         <script src='@routes.Assets.versioned("javascripts/lib/jquery-3.0.0.min.js")'></script>
         <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"   integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="   crossorigin="anonymous"></script>
         <script src='@routes.Assets.versioned("javascripts/lib/fullcalendar.min.js")'></script>
-        <script src="@routes.Assets.versioned("javascripts/hello.js")" type="text/javascript"></script>
+        <script src="@routes.Assets.versioned("javascripts/handlecalendar.js")" type="text/javascript"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" type="text/javascript"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-json/2.5.1/jquery.json.min.js" type="text/javascript"></script>
 
@@ -21,17 +21,7 @@
 
             $(document).ready(function() {
 
-                /*var navbar = $("nav.navbar");
-
-                navbar.css("background-color", "#000000");*/
-
                 var clickableElements = $("ul#menu li");
-
-                clickableElements.hover(function() {
-                   $(this).css("text-decoration", "underline");
-                }, function() {
-                    $(this).css("text-decoration", "none");
-                });
 
                 clickableElements.click(function(e) {
 
@@ -44,7 +34,7 @@
                     $(this).addClass("active");
 
                     var clicked = $(this).text();
-                    console.log(clicked);
+
                     if (clicked == "Underlings") {
                         getUnderlings(function(data) {
                             var underlingsHtml = data.map(function(obj) {
@@ -61,7 +51,8 @@
                             setupCalendar($("#calendar"), data);
                         });
                     } else if (clicked == "Administrator") {
-                        console.log("y u do dis");
+                    } else {
+                        console.log("new menu element?");
                     }
 
 
@@ -102,10 +93,18 @@
 
                     /* only saving events which have no id for now */
                     /* TODO: change event.start and event.end to LONGs instead of DateStrings */
+
                     var fixedEvents = events.map(function(event) {
-                        return {"id": event.id, "title": event.title, "from": event.start, "to": event.end, "groupId": groupId}
+                        var startLong = event.start.toDate().getTime();
+                        var endLong = null;
+                        if (event.end != null) {
+                            endLong = event.end.toDate().getTime();
+                        }
+
+                        return {"id": event.id, "title": event.title, "from": startLong, "to": endLong, "groupId": groupId}
                     });
 
+                    /* save the events without id, update the events with id */
                     var eventsWithoutId = fixedEvents.filter(function(event) {
                         return event.id == null;
                     });

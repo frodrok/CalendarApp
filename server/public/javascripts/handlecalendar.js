@@ -1,7 +1,3 @@
-if (window.console) {
-  console.log("app init, lets go");
-}
-
 function setupCalendar(calendarObject, events) {
 
     /* wierd mapping one variable name */
