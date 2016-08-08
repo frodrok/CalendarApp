@@ -126,7 +126,7 @@ class UserController @Inject()(val messagesApi: MessagesApi,
 
       /* not gonna handle case None => 'cause im a baws */
       user.admin.get match {
-        case false => Ok(views.html.user.base(user, allGroups, events))
+        case false => Ok(views.html.user.base(user))
         case true => Ok(views.html.admin.base(user, allGroups, events, underlings))
       }
 

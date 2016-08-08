@@ -1,4 +1,4 @@
-function setupCalendar(calendarObject, events) {
+function setupCalendar(calendarObject, events, editable) {
 
     /* wierd mapping one variable name */
     /* jquery fullcalendar event object example:
@@ -6,7 +6,7 @@ function setupCalendar(calendarObject, events) {
          allDay: false, url: 'http://google.se'}
      */
     var fixedEvents = events.map(function(event) {
-        return {id: event.id, title: event.title, start: event.from}
+        return {id: event.id, title: event.title, start: event.from, end: event.to}
     });
 
     /* 2016-08-07T14:20:00 */
@@ -65,7 +65,8 @@ function setupCalendar(calendarObject, events) {
           console.log("event: " + event + " clicked!");
         },
         defaultDate: '2016-08-07',
-        editable: true,
+        editable: editable,
+        timeFormat: 'H:mm',
         eventLimit: true,
         aspectRatio: 1.6,
         events: fixedEvents
