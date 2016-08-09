@@ -10,7 +10,7 @@ case class Group(id: Option[Int], groupName: String, active: Boolean) {
   }
 }
 
-case class Event(id: Option[Int], eventName: String, from: Long, to: Long, groupId: Option[Int])
+case class Event(id: Option[Int], eventName: String, from: Long, to: Long, groupId: Option[Int], background: Boolean)
 
 case class UserNotFoundException(s: String) extends Exception
 

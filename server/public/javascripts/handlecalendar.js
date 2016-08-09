@@ -3,11 +3,21 @@ function setupCalendar(calendarObject, events, editable) {
     /* wierd mapping one variable name */
     /* jquery fullcalendar event object example:
         {id: 999, title: 'repeating event', start: 20160806T14:37', end: '20160806T20:00',
-         allDay: false, url: 'http://google.se'}
+         allDay: false, url: 'http://google.se', rendering: 'background'}
      */
     var fixedEvents = events.map(function(event) {
         return {id: event.id, title: event.title, start: event.from, end: event.to}
     });
+
+
+    /* fixedEvents.push({title: 'android',
+        start: '2016-07-31T00:00',
+        end: '2016-08-19T00:00',
+        rendering: 'background',
+        allDay: true}
+        ); */
+
+    console.log(fixedEvents);
 
     /* 2016-08-07T14:20:00 */
 
@@ -69,7 +79,12 @@ function setupCalendar(calendarObject, events, editable) {
         timeFormat: 'H:mm',
         eventLimit: true,
         aspectRatio: 1.6,
-        events: fixedEvents
+        events: fixedEvents,
+        eventRender: function (event, element) {
+            if (event.rendering == 'background') {
+                element.append(event.title);
+            }
+        }
     });
 }
 
