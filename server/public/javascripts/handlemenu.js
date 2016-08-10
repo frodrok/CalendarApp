@@ -24,6 +24,7 @@ function handleMenu(userId, groupId, menuElements, content, calendar, calendarEd
             });
         } else if (clicked == "Calendar") {
             var emptyCal = "<div id='calendar'></div>";
+            // content.html('');
             content.append(emptyCal);
 
             getEvents(userId, function (data) {

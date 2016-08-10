@@ -132,7 +132,8 @@ class UserController @Inject()(val messagesApi: MessagesApi,
 
       // Ok(views.html.user.base(user, allGroups))
     } else {
-      BadRequest(views.html.error("no session found, go log in"))
+      /* BadRequest(views.html.error("no session found, go log in")) */
+      Redirect("/")
     }
   }
 

@@ -1,3 +1,7 @@
+var fCalendar = null;
+
+var eventsToBeRemoved = [];
+
 function setupCalendar(calendarObject, events, editable) {
 
     /* wierd mapping one variable name */
@@ -6,18 +10,22 @@ function setupCalendar(calendarObject, events, editable) {
          allDay: false, url: 'http://google.se', rendering: 'background'}
      */
     var fixedEvents = events.map(function(event) {
-        return {id: event.id, title: event.title, start: event.from, end: event.to}
+        if (event.background) {
+            return {
+                    id: event.id,
+                    title: event.title,
+                    start: event.from,
+                    end: event.to,
+                    rendering: 'background',
+                    allDay: true,
+                    backgroundColor: 'green',
+                    color: event.color
+                }
+
+        } else {
+            return {id: event.id, title: event.title, start: event.from, end: event.to, color: event.color}
+        }
     });
-
-
-    /* fixedEvents.push({title: 'android',
-        start: '2016-07-31T00:00',
-        end: '2016-08-19T00:00',
-        rendering: 'background',
-        allDay: true}
-        ); */
-
-    console.log(fixedEvents);
 
     /* 2016-08-07T14:20:00 */
 
@@ -25,7 +33,7 @@ function setupCalendar(calendarObject, events, editable) {
         console.log("no events recieved");
     }
 
-    calendarObject.fullCalendar({
+    fCalendar = calendarObject.fullCalendar({
         header: {
             left: 'prev,next today',
             center: 'title',
@@ -72,7 +80,7 @@ function setupCalendar(calendarObject, events, editable) {
             calendarObject.fullCalendar('unselect');
         }, */
         eventClick: function(event, jsEvent, view) {
-          console.log("event: " + event + " clicked!");
+          toggleClick(event, jsEvent, view);
         },
         defaultDate: '2016-08-07',
         editable: editable,
@@ -101,6 +109,38 @@ function addEventToCalendar(calendarObject, title, start, end, allDay) {
     );
 
     calendarObject.fullCalendar('unselect');
+}
+
+var toggled = 0;
+
+function toggleClick(event, jsEvent, view) {
+    var htmlTarget = jsEvent.currentTarget;
+
+    var newDiv = "<div id='deletetoggled' class='btn btn-primary' style='display: inline'><span>Delete</span></div>";
+
+    if (toggled == 0) {
+        $(htmlTarget).css("background-color", "red");
+        $("#manipulateevents div:last-child").after(newDiv);
+        toggled = 1;
+
+        $("#deletetoggled").click(function(e) {
+            eventsToBeRemoved.push(event.id);
+            console.log(eventsToBeRemoved);
+           fCalendar.fullCalendar('removeEvents', event.id);
+            fCalendar.fullCalendar('rerenderEvents');
+            $("#deletetoggled").remove();
+        });
+    } else {
+        $("#deletetoggled").remove();
+        $(htmlTarget).css("background-color", "#3A87AD");
+        toggled = 0;
+    }
+
+
+}
+
+function getDeletedEvents() {
+    return eventsToBeRemoved;
 }
 
 function showNewEventWindowAndGetVariables(callback) {

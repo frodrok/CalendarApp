@@ -38,6 +38,7 @@
                     $("#neweventmodal").modal('show');
                 });
 
+
                 $("button#saveEventButton").click(function(e) {
 
                     e.preventDefault();
@@ -78,18 +79,38 @@
 
                     var asList = $.toJSON(eventsWithoutId);
 
-                    saveEvents(asList, function(e) {
+                    var deletes = getDeletedEvents();
+
+                    deletes.map(function(id) {
+                       deleteEvent(id, function(e) {
                            console.log(e);
+                       });
+                    });
+
+                    saveEvents(asList, function(e) {
+                        /* post redirect get to load the events */
+                           if (e) {
+                               window.location.href = "/user";
+                            }
                     });
                 });
 
 
             });
 
-            function saveEvents(events, callback) {
-                console.log(events.toString());
+            function deleteEvent(eventId, callback) {
                 $.ajax({
-                    url:url + "/eventList",
+                    url: url + "/events/" + eventId,
+                    type: "DELETE",
+                    success: function(e) {
+                        callback(e);
+                    }
+                })
+            }
+
+            function saveEvents(events, callback) {
+                $.ajax({
+                    url:url + "/events",
                     type:"POST",
                     data:events,
                     contentType:"application/json; charset=utf-8",
@@ -174,17 +195,20 @@
         @navbar.navbar("YHC3L Kalender", user.username)
 
         <div id="content">
+            <div id="manipulateevents">
             <div id="addevent">
-                <p class="pBorder">+</p>
+                <button class="btn btn-primary">Add event</button>
                 </div>
             <div id="saveevents">
-                <p class="pBorder">Save</p>
+                <button class="btn btn-primary">Save events to server</button>
             </div>
+            </div>
+
             <div id="calendar">
 
             </div>
         </div>
-        
+
         @newmodal.eventmodal()
     </body>
 </html>
