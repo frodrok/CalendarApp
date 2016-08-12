@@ -1,10 +1,41 @@
-@(registerForm: Form[UserRegisterData])(loginForm: Form[UserFormData])(implicit messages: Messages)
+@(registerForm: Form[UserRegisterData])(loginForm: Form[UserFormData])(implicit messages: Messages, l: Lang)
 
-@import helper._
+@import helper._; val registerText = Messages("register"); val loginText = Messages("login"); val usernameText = Messages("username"); val passwordText = Messages("password");
 
-<div class="register">
 
-<h1>Register</h1>
+    <style>
+        /* used to center the content in the middle of the page */
+        html, body, .container-table {
+            height: 100%;
+        }
+        .container-table {
+            display: table;
+        }
+        .vertical-center-row {
+            display: table-cell;
+            vertical-align: middle;
+        }
+
+        /* info is a class displaying the requirements of forms */
+        .info {
+            display: none;
+        }
+
+        @if(l.code == "sv") {
+            #register {
+                width: 20em;
+            }
+        }
+
+    </style>
+
+    <div class="container container-table">
+    <div class="row vertical-center-row">
+    <div id="wrapper">
+
+<div id="register" class="col-md-offset-3 col-md-3">
+
+<h1>@registerText</h1>
 @form(action = routes.BaseController.register()) {
 
     @inputText(registerForm("username"))
@@ -13,22 +44,24 @@
     @checkbox(registerForm("isadmin"))
     @inputText(registerForm("groupid"))
 
-    <input type="submit" value="register" />
+    <input type="submit" class="btn btn-success" value="@registerText" />
 
 }
 </div>
 
-    <div class="login">
-        <h1>login</h1>
-    @form(action = routes.BaseController.login()) {
+    <div id="login" class="col-md-3">
+        <h1>@loginText</h1>
+        @form(action = routes.BaseController.login()) {
 
-        @inputText(loginForm("username"))
+            @inputText(loginForm("username"))
+            @*<input type="text" id="username" name="username" placeholder="@usernameText" value="">*@
+            @*<input type="text" id="password" name="password" placeholder="@passwordText" value="">*@
 
-        @inputPassword(loginForm("password"))
+            @inputPassword(loginForm("password"))
 
-        <input type="submit" value="login" />
+            <input class="btn btn-primary" type="submit" value="@loginText" />
 
-    }
+        }
     </div>
 
 @if(loginForm.hasGlobalErrors) {
@@ -38,3 +71,6 @@
     }
     </ul>
 }
+    </div>
+    </div>
+    </div>

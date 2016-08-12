@@ -21,23 +21,12 @@ import play.api.libs.functional.syntax._
 
 import scala.concurrent.duration._
 
-case class EventWithTimeStamp(id: Option[Int], eventName: String, from: DateTime, to: Option[DateTime], groupId: Option[Int])
-
 class UserController @Inject()(val messagesApi: MessagesApi,
                                ws: WSClient,
                                implicit val environment: Environment,
                                config: Configuration) extends Controller with I18nSupport{
 
   val URL = config.getString("custom.restAPIURL").get
-
-  implicit val eventWrites = new Writes[EventWithTimeStamp] {
-    def writes(event: EventWithTimeStamp) = Json.obj(
-      "eventName" -> event.eventName,
-      "from" -> event.from.toString,
-      "to" -> event.to.toString,
-      "groupId" -> event.groupId
-    )
-  }
 
   implicit val eventReads: Reads[JsonEvent] = (
     (JsPath \ "id").readNullable[Int] and

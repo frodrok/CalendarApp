@@ -2,22 +2,19 @@ package controllers
 
 import javax.inject.Inject
 
-import com.typesafe.config.ConfigFactory
 import model._
-import org.joda.time.DateTime
-import play.api.{Environment, Logger, Play}
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.i18n.{I18nSupport, Lang, Messages, MessagesApi}
+import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, Reads}
-import play.api.libs.ws.{WSBody, WSClient, WSRequest, WSResponse}
+import play.api.libs.ws.{WSClient, WSResponse}
 import play.api.mvc.{Action, Controller}
+import play.api.{Environment, Logger}
 
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import play.api.libs.functional.syntax._
+import scala.concurrent.{Await, Future}
 
 
 class BaseController @Inject()(val messagesApi: MessagesApi,
@@ -49,20 +46,15 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
   )
 
   def index = Action { implicit request =>
-    Ok(views.html.index.index(TITLE)(registerUserForm)(loginUserForm))
+    Ok(views.html.index.index()(registerUserForm)(loginUserForm))
   }
 
   def register = Action.async { implicit request =>
     registerUserForm.bindFromRequest.fold(
       formWithErrors => {
-        Future(BadRequest(views.html.index.index(TITLE)(formWithErrors)(loginUserForm)))
+        Future(BadRequest(views.html.index.index()(formWithErrors)(loginUserForm)))
       },
       userData => {
-        /* dbcode val newUser = User(0, userData.username, userData.password, Some(userData.isAdmin), userData.groupId)
-        userDao.add(newUser).onFailure { case ex => println("could not save user: " + ex.getMessage)}
-        Redirect("/") */
-
-        //val ar: Future[WSResponse] = ws.url(URL + "/validateuser").withMethod("GET").withBody(data).get()
 
         val payload = Json.obj(
           "username" -> userData.username,
@@ -94,7 +86,7 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
   def login = Action.async { implicit request =>
     loginUserForm.bindFromRequest.fold(
       formWithErrors => {
-        Future(BadRequest(views.html.index.index(TITLE)(registerUserForm)(formWithErrors)))
+        Future(BadRequest(views.html.index.index()(registerUserForm)(formWithErrors)))
       },
       userData => {
           Future(Redirect("/user").withSession("connected" -> userData.username))

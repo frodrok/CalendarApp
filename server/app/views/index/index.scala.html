@@ -1,11 +1,13 @@
-@(title: String)(registerForm: Form[UserRegisterData])(loginForm: Form[UserFormData])(implicit messages: Messages, environment: play.api.Environment)
+@()(registerForm: Form[UserRegisterData])(loginForm: Form[UserFormData])(implicit messages: Messages, environment: play.api.Environment, l: Lang)
+
+
 
 @*
  * Call the `main` template with two arguments. The first
  * argument is a `String` with the title of the page, the second
  * argument is an `Html` object containing the body of the page.
  *@
-@main(title) {
+@main(Messages("title")) {
 
     @*
      * Get an `Html` object by calling the built-in Play welcome

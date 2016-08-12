@@ -16,16 +16,21 @@ function handleMenu(userId, groupId, menuElements, content, calendar, calendarEd
 
         if (clicked == "Underlings") {
             getUnderlings(groupId, function (data) {
+
                 var underlingsHtml = data.map(function (obj) {
                     return "<p>id: " + obj.id + ", username: " + obj.username + "</p>";
                 });
 
-                content.html(underlingsHtml);
+                var underlingsWrapper = "<div id='underlings'>" + underlingsHtml + "</div>";
+
+                content.html(underlingsWrapper);
             });
         } else if (clicked == "Calendar") {
             var emptyCal = "<div id='calendar'></div>";
             // content.html('');
             content.append(emptyCal);
+
+            $("#underlings").remove();
 
             getEvents(userId, function (data) {
                 setupCalendar($("#calendar"), data, calendarEditable);

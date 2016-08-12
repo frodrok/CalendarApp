@@ -35,7 +35,7 @@ function setupCalendar(calendarObject, events, editable) {
 
     fCalendar = calendarObject.fullCalendar({
         header: {
-            left: 'prev,next today',
+            left: 'prev,next today addEvent saveEvents',
             center: 'title',
              /*right: 'month,basicWeek,basicDay'*/
             right: 'month,agendaWeek,agendaDay'
@@ -86,7 +86,21 @@ function setupCalendar(calendarObject, events, editable) {
         editable: editable,
         timeFormat: 'H:mm',
         eventLimit: true,
-        aspectRatio: 1.6,
+        aspectRatio: 2,
+        customButtons: {
+            addEvent: {
+                text: 'Add event',
+                click: function(e) {
+                    $("#neweventmodal").modal('show');
+                }
+            },
+            saveEvents: {
+                text: 'Save all events',
+                click: function(e) {
+                    saveEventsButtonClick();
+                }
+            }
+        },
         events: fixedEvents,
         eventRender: function (event, element) {
             if (event.rendering == 'background') {
