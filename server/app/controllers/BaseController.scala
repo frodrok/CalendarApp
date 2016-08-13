@@ -62,7 +62,7 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
           "admin" -> userData.isAdmin
         )
 
-        var send: Future[WSResponse] = ws.url(URL + "/users").post(payload)
+        val send: Future[WSResponse] = ws.url(URL + "/users").post(payload)
 
         send.map {
           response => {
@@ -86,7 +86,7 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
   def login = Action.async { implicit request =>
     loginUserForm.bindFromRequest.fold(
       formWithErrors => {
-        Future(BadRequest(views.html.index.index()(registerUserForm)(formWithErrors)))
+        Future(Ok(views.html.index.index()(registerUserForm)(formWithErrors)))
       },
       userData => {
           Future(Redirect("/user").withSession("connected" -> userData.username))
@@ -118,16 +118,12 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
         throw JsonException("Could not parse retrieved json in basecontroller.checkusernameavailable")
       },
       two => {
-        val userOption = two.filter(_.username == username).headOption
+        val userOption = two.find(_.username == username)
         userOption match {
-          case Some(user) => {
-            false
-          }
-          case None => {
-            true
+          case Some(user) => false
+          case None => true
           }
         }
-      }
     )
 
   }
@@ -143,10 +139,6 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
     val ar: Future[WSResponse] = ws.url(URL + "/validateuser").withMethod("GET").withBody(data).get()
 
     Await.result(ar, 5.seconds).status == 200
-  }
-
-  private def loginUser(user: User, dbUser: User): Boolean = {
-    dbUser.username == user.username && dbUser.password == user.password
   }
 
   def setup = Action {

@@ -18,13 +18,14 @@
             var url = "http://83.227.87.14:9000";
             var userId = @user.id;
             var groupId = @user.groupId.get;
+            var admin = @user.admin.get;
 
             $(document).ready(function() {
 
                 var clickableElements = $("ul#menu li");
 
                 /* param: userid, groupid, menuelements, contentobject, calendarobject */
-                handleMenu(userId, groupId, clickableElements, $("#content"), $("#calendar"), false);
+                handleMenu(userId, groupId, clickableElements, $("#content"), $("#calendar"), false, admin);
 
                 clickableElements.first().click();
                 $("#newEventForm input[name='to']").keyup(function(event){

@@ -2,7 +2,7 @@ var fCalendar = null;
 
 var eventsToBeRemoved = [];
 
-function setupCalendar(calendarObject, events, editable) {
+function setupCalendar(calendarObject, events, editable, admin) {
 
     /* wierd mapping one variable name */
     /* jquery fullcalendar event object example:
@@ -44,43 +44,10 @@ function setupCalendar(calendarObject, events, editable) {
         fixedWeekCount: false,
         selectable: true,
         selectHelper: true,
-        /* select: function(start, end, allDay) {
-
-            console.log("in select start: " + start.format('YYYY-MM-DD hh:mm'));
-            console.log("in select end: " + end.format('YYYY-MM-DD hh:mm'));
-
-            showNewEventWindowAndGetVariables(function(e) {
-                var eventTitle = e.title;
-                var fromValue = e.fromInput;
-                var toValue = e.toInput;
-                var selectedStart = moment(new Date(start)).format('YYYY-MM-DD');
-                /* var selectedEnd = moment(new Date(end)).format('YYYY-MM-DD');
-                var selectedEnd = end.format('YYYY-MM-DD');
-
-                var totalStart = selectedStart + "T" + fromValue + ":00";
-                var totalEnd = selectedEnd + "T" + toValue + ":00";
-                addEventToCalendar(calendarObject, eventTitle, totalStart, totalEnd, allDay);
-            });
-
-            /*
-             if title is enterd calendar will add title and event into fullCalendar.
-             */
-            /* if (title)
-            {
-                calendarObject.fullCalendar('renderEvent',
-                    {
-                        title: title,
-                        start: moment(new Date(start)).format(),
-                        end: end,
-                        allDay: allDay
-                    },
-                    true // make the event "stick"
-                );
-            }
-            calendarObject.fullCalendar('unselect');
-        }, */
         eventClick: function(event, jsEvent, view) {
-          toggleClick(event, jsEvent, view);
+            if (admin) {
+                toggleClick(event, jsEvent, view);
+            }
         },
         defaultDate: '2016-08-07',
         editable: editable,
@@ -128,20 +95,23 @@ function addEventToCalendar(calendarObject, title, start, end, allDay) {
 var toggled = 0;
 
 function toggleClick(event, jsEvent, view) {
+
+    /* when we click it set the background color to red and show delete button */
+
     var htmlTarget = jsEvent.currentTarget;
 
-    var newDiv = "<div id='deletetoggled' class='btn btn-primary' style='display: inline'><span>Delete</span></div>";
+    var deleteButton = "<button id='deletetoggled' class='fc-button fc-state-default fc-corner-left'>Delete event</button>";
 
     if (toggled == 0) {
-        $(htmlTarget).css("background-color", "red");
-        $("#manipulateevents div:last-child").after(newDiv);
         toggled = 1;
+        $(htmlTarget).css("background-color", "red");
+        $(".fc-left").append(deleteButton);
 
         $("#deletetoggled").click(function(e) {
             eventsToBeRemoved.push(event.id);
             console.log(eventsToBeRemoved);
-           fCalendar.fullCalendar('removeEvents', event.id);
-            fCalendar.fullCalendar('rerenderEvents');
+        /*    fCalendar.fullCalendar('removeEvents', event.id);
+            fCalendar.fullCalendar('rerenderEvents'); */
             $("#deletetoggled").remove();
         });
     } else {

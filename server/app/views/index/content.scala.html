@@ -29,6 +29,8 @@
 
     </style>
 
+    <script></script>
+
     <div class="container container-table">
     <div class="row vertical-center-row">
     <div id="wrapper">
@@ -65,11 +67,19 @@
     </div>
 
 @if(loginForm.hasGlobalErrors) {
-    <ul>
+    @* <ul class="error">
     @for(error <- loginForm.globalErrors) {
         <li>@Messages(error.messages, error.args)</li>
     }
-    </ul>
+    </ul> *@
+
+    <script>
+        var appendTo = $("#login #username_field dd");
+
+        var redx = "<span style='color: #ff0000; font-size: 1.5em;'>X</span>";
+        appendTo.append(redx);
+    </script>
+
 }
     </div>
     </div>

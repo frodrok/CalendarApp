@@ -1,6 +1,6 @@
 var url = "http://83.227.87.14:9000";
 
-function handleMenu(userId, groupId, menuElements, content, calendar, calendarEditable) {
+function handleMenu(userId, groupId, menuElements, content, calendar, calendarEditable, admin) {
 
     menuElements.click(function (e) {
 
@@ -33,7 +33,7 @@ function handleMenu(userId, groupId, menuElements, content, calendar, calendarEd
             $("#underlings").remove();
 
             getEvents(userId, function (data) {
-                setupCalendar($("#calendar"), data, calendarEditable);
+                setupCalendar($("#calendar"), data, calendarEditable, admin);
             });
         } else if (clicked == "Administrator") {
         } else {
