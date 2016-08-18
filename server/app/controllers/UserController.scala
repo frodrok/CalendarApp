@@ -11,7 +11,7 @@ import play.api.data.Forms._
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
 import play.api.libs.ws.{WSClient, WSResponse}
-import play.api.mvc.{Action, BodyParsers, Controller}
+import play.api.mvc.{Action, BodyParsers, Controller, Result}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
@@ -87,7 +87,7 @@ class UserController @Inject()(val messagesApi: MessagesApi,
   def userPage = Action { request =>
 
     /* TODO: can I make all this asynchronous?? */
-    val allGroups = getAllGroups
+    // val allGroups = getAllGroups
 
     val username = request.session.get("connected")
 
@@ -100,24 +100,31 @@ class UserController @Inject()(val messagesApi: MessagesApi,
         case Some(identityNumber) => identityNumber
       }
 
-      val user = User(userId, jsonUser.username, jsonUser.password.get, jsonUser.admin, jsonUser.groupId)
+      val user = User(userId, jsonUser.username, jsonUser.password.get, jsonUser.admin, jsonUser.groupId, jsonUser.superAdmin)
 
-      val events: Seq[JsonEvent] = fetchEvents(user.id.toInt)
+      if (user.superAdmin.isDefined) {
+        val su = user.superAdmin.get
 
-      val gId = user.groupId match {
-        case None => {
-          Logger.warn("User " + user.id + " has no groupId, fix it")
-          0
+        if (su) {
+          Ok(views.html.superadmin.base())
+        } else if (user.admin.isDefined) {
+          val admin = user.admin.get
+          if (admin) {
+            Ok(views.html.admin.base(user, Seq.empty, Seq.empty, Seq.empty))
+          } else {
+            Ok(views.html.user.base(user))
+          }
+        } else {
+          Ok("")
         }
-        case Some(value) => value
+      } else {
+        Ok("")
       }
-      val underlings: Seq[JsonUser] = fetchUnderlings(gId).filter(_.admin.get != true)
-
       /* not gonna handle case None => 'cause im a baws */
-      user.admin.get match {
+      /* user.admin.get match {
         case false => Ok(views.html.user.base(user))
         case true => Ok(views.html.admin.base(user, allGroups, events, underlings))
-      }
+      }  */
 
       // Ok(views.html.user.base(user, allGroups))
     } else {
@@ -143,7 +150,7 @@ class UserController @Inject()(val messagesApi: MessagesApi,
 
   def fetchEvents(userId: Int): Seq[JsonEvent] = {
 
-    Logger.debug("fetching events for userId: " + userId)
+    /* Logger.debug("fetching events for userId: " + userId)
 
     val jsonString: String = Await.result(ws.url(URL + "/users/" + userId + "/events").get(), 5.seconds).body
 
@@ -155,7 +162,9 @@ class UserController @Inject()(val messagesApi: MessagesApi,
         Seq.empty
       },
       jsonEventSeq => jsonEventSeq
-    )
+    ) */
+
+    Seq.empty
   }
 
   implicit val jsonUserRead: Reads[JsonUser] = (
@@ -163,7 +172,8 @@ class UserController @Inject()(val messagesApi: MessagesApi,
     (JsPath \ "username").read[String] and
       (JsPath \ "password").readNullable[String] and
       (JsPath \ "admin").readNullable[Boolean] and
-      (JsPath \ "groupId").readNullable[Int]
+      (JsPath \ "groupId").readNullable[Int] and
+        (JsPath \ "superAdmin").readNullable[Boolean]
     )(JsonUser.apply _)
 
   private def getJsonUserFromServer(username: String): JsonUser = {

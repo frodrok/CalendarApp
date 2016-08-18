@@ -1,19 +1,12 @@
-@(brand: String, username: String, groupId: Option[Int])
+@(brand: String, username: String)
 
 <script>
-
-    function fetchGroupName(groupId, callback) {
-        $.get("http://83.227.87.14:9000/groups/2", function(data) {
-           callback(data);
-        });
-    }
-
-
-
+    var api_url = "http://83.227.87.14:9000";
 
         $(document).ready(function () {
 
             var clickableElements = $("ul#menu li");
+            var globalLicenses = null;
 
             clickableElements.hover(function () {
                 $(this).css("text-decoration", "underline");
@@ -24,20 +17,160 @@
             clickableElements.click(function () {
                 clickableElements.removeClass("active");
                 $(this).addClass("active");
+
+                var clicked = $(this).text();
+                var content = $("#content");
+
+                if (clicked == "Licenses") {
+
+                    $("#admins").remove();
+
+                    var licensesDiv = "<div id='licenses'></div>";
+
+                    var contenthtml = "<p>Licenses</p>" +
+                            "<form id='addlicense'>" +
+                            "<input type='text' name='company'>" +
+                            "<input type='submit' value='Add license'>" +
+                            "</form>";
+
+                    content.html(contenthtml);
+                    content.before(licensesDiv);
+
+                    $("#addlicense").submit(function(e) {
+                        e.preventDefault();
+
+                        var companyName = $("#addlicense input[name='company']").val();
+
+                        addLicense(companyName, function(e, xhr) {
+                            window.location.href = "/user";
+                        });
+                    });
+
+                    var licensesDiverino = $("#licenses");
+
+                    getLicenses(function(licenses) {
+                        globalLicenses = licenses;
+                        var asHtml = licenses.map(function(license) {
+                           return "<p>" + license.id + ": " + license.company + "</p>";
+                        });
+
+                        licensesDiverino.html(asHtml);
+                    });
+                } else if (clicked == "Admins") {
+
+                    $("#licenses").removeData();
+                    var admins = "<div id='admins'></div>";
+
+                    $("#licenses").after(admins);
+
+                    if (globalLicenses != null) {
+                        var licensesAsHtml = globalLicenses.map(function(license) {
+                            return "<p><a href='#' name=" + license.id + " class='licenselink' id='" + license.company + "'>[" + license.id + "]: " + license.company + "</a></p>"
+                        });
+                    }
+
+                    $("#licenses").html(licensesAsHtml);
+
+                    $(".licenselink").click(function(e) {
+                        var licenseid = e.target.name;
+
+                        getAdmins(licenseid, function (admins) {
+                            var adminsAsHtml = admins.map(function(e) {
+                               return "<p>" + e.id + ", username " + e.username + ", licenseid: " + e.licenseId + "</p>";
+                            });
+                            $("#admins").html(adminsAsHtml);
+                        });
+                    });
+
+                    var adminsHtml = "<p>Admins</p>" +
+                            "<form id='addadmin'>" +
+                            "<input type='text' name='username'>" +
+                            "<input type='password' name='password'>" +
+                            "<input type='number' name='licenseId'>" +
+                            "<input type='submit' value='Add admin'>" +
+                            "</form>"
+                    content.html(adminsHtml);
+
+                    var addadmin = $("#addadmin");
+                    addadmin.submit(function(e) {
+                        e.preventDefault();
+                        var username = $("#addadmin input[name='username']").val();
+                        var password = $("#addadmin input[name='password']").val();
+                        var licenseId = $("#addadmin input[name='licenseId']").val();
+                        var licenseIdAsNumber = Number(licenseId);
+                        addAdmin(username, password, licenseIdAsNumber, function(e) {
+                            window.location.href = "/user";
+                        });
+                    });
+                }
+
             });
 
+            clickableElements.first().click();
             /* if user has groupId, fetch groupName, otherwise set groupName to NoGroup */
-            @if(groupId.isDefined) {
-                fetchGroupName(groupId.get, function (data) {
-                    if (data.groupName) {
-                        var groupName = data.groupName;
-                        $("#groupName").text(groupName);
-                    }
-                });
-            } else {
-                $("#groupName").text("NoGroup");
+            $("#groupName").text("NoGroup");
+
+
+        });
+
+    function addAdmin(username, password, licenseId, callback) {
+        var objectToSend = {'username': username, 'password': password, 'licenseId': licenseId};
+        var asJson = $.toJSON(objectToSend);
+
+        $.ajax({
+            type: "POST",
+            url: api_url + "/licenses/" + licenseId + "/admins",
+            data: asJson,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function(e, xhr) {
+                callback(e, xhr);
+            }
+        }).fail(function(e) {
+            callback(e);
+        });
+    }
+
+    function getAdmins(licenseId, callback) {
+        var goto = api_url + "/licenses/" + licenseId + "/admins";
+        $.ajax({
+            type: "GET",
+            url: goto,
+            success: function(e) {
+                callback(e);
+            }
+        }).fail(function(e) {
+            callback(e)
+        });
+    }
+
+    function getLicenses(callback) {
+        $.ajax({
+            type: "GET",
+            url: api_url + "/licenses",
+            success: function(e) {
+                callback(e);
             }
         });
+    }
+
+    function addLicense(companyname, callback) {
+        var data = {"company": companyname};
+        var json = $.toJSON(data);
+
+        $.ajax({
+            type: "POST",
+            url: api_url + "/licenses",
+            data: json,
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (e, statusText, xhr) {
+                callback(e, xhr.status);
+            }
+        }).fail(function(e) {
+            callback(e);
+        });
+    }
 
 </script>
 <nav class="navbar navbar-default">
@@ -57,9 +190,8 @@
             <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             <ul id="menu" class="nav navbar-nav">
-                <li class="active"><a href="#">Calendar</a></li>
-                <li><a href="#">Kurser</a></li>
-                <li><a href="#">Don't click me</a></li>
+                <li class="active"><a href="#">Admins</a></li>
+                <li><a href="#">Licenses</a></li>
                 @* dropdown <li class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
                 <ul class="dropdown-menu">
@@ -73,21 +205,16 @@
                 </ul>
                 </li> *@
             </ul>
-            <form class="navbar-form navbar-left">
-                <div class="form-group">
-                    <input type="text" class="form-control" placeholder="Search">
-                </div>
-                <button type="submit" class="btn btn-default">Submit</button>
-            </form>
+
             <ul class="nav navbar-nav navbar-right">
                 <li><a id="groupName" href="#">Link</a></li>
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">@username.capitalize <span class="caret"></span></a>
                     <ul class="dropdown-menu">
-                        <li><a href="#">Action</a></li>
+                        @*<li><a href="#">Action</a></li>
                         <li><a href="#">Another action</a></li>
                         <li><a href="#">Something else here</a></li>
-                        <li role="separator" class="divider"></li>
+                        <li role="separator" class="divider"></li>*@
                         <li><a href="/user/logout">Log out</a></li>
                     </ul>
                 </li>

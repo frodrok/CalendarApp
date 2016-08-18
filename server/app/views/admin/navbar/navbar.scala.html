@@ -1,16 +1,130 @@
-@(brand: String, username: String)
+@(brand: String, username: String, groupId: Option[Int])
 
 <script>
+
+    function fetchGroupName(groupId, callback) {
+        $.get("http://83.227.87.14:9000/groups/" + groupId, function(data) {
+            callback(data);
+        });
+    }
+
+    var api_url = "http://83.227.87.14:9000";
     $(document).ready(function() {
 
         var clickableElements = $("ul#menu li");
+
+        var username = '@username';
 
         clickableElements.hover(function () {
             $(this).css("text-decoration", "underline");
         }, function () {
             $(this).css("text-decoration", "none");
         });
+
+        @if(groupId.isDefined) {
+        fetchGroupName(@groupId.get, function (data) {
+            if (data.groupName) {
+                var groupName = data.groupName;
+                $("#groupName").text(groupName);
+            }
+        });
+
+        } else {
+        $("#groupName").text("NoGroup");
+        $("#groupName").click(function (e) {
+            var setGroup = "<form id='setgroup'>" +
+                    "<input type='number' name='groupId'>" +
+                    "<input type='submit' value='Set group'></form><br>";
+
+            var addGroup = "<form id='addgroup'>" + "<input type='text' name='groupName'>" + "<input type='submit' value='Add group'></form>";
+
+            fetchGroups(function (e) {
+
+                var asHtml = e.map(function (e) {
+                    return "<p>[" + e.id + "]: " + e.groupName + "</p>";
+                });
+                $("#content").html(asHtml);
+            });
+
+            $("#content").after(setGroup);
+            $("#content").after(addGroup);
+
+            $("#addgroup").submit(function (event) {
+                event.preventDefault();
+                var groupName = $("#addgroup input[name='groupName']").val();
+                addGroupFunction(groupName, function (e) {
+                    console.log(e + ": group added");
+                    window.location.href = "/user";
+                });
+            });
+
+            $("#setgroup").submit(function (event) {
+                event.preventDefault();
+                var groupId = $("#setgroup input[name='groupId']").val();
+                var groupIdNumber = Number(groupId);
+                setGroupFunction(groupIdNumber, username, function (e) {
+                    console.log(e + "group updated");
+                    window.location.href = "/user";
+                })
+            });
+
+        });
+
+
+        }
+
     });
+
+    function setGroupFunction(groupId, username, callback) {
+
+        getUserIdByUsername(username, function(e) {
+            var userObject = e;
+            var sendTo = api_url + "/users/" + userId;
+            var toUpdate = {'id': userObject.id, "groupId": groupId, "username": userObject.username, "password": userObject.password,
+                "superadmin": userObject.superadmin, "admin": userObject.admin, "licenseId": userObject.licenseId};
+            var asJson = $.toJSON(toUpdate);
+
+            $.ajax({
+                type: "PUT",
+                contentType: "application/json",
+                data: asJson,
+                url: sendTo,
+                success: function(e) {
+                    callback(e);
+                }
+            }).fail(function(e) {
+                callback(e);
+            });
+        });
+    }
+
+    function getUserIdByUsername(username, callback) {
+        $.get(api_url + "/users/username/" + username, function(data) {
+            callback(data);
+        });
+    }
+
+    function addGroupFunction(groupname, callback) {
+        var dejta = {'groupName': groupname};
+        var asJson = $.toJSON(dejta);
+        $.ajax({
+            type: "POST",
+            url: api_url + "/groups",
+            contentType: "application/json",
+            data: asJson,
+            success: function(e) {
+                callback(e);
+            }
+        }).fail(function(e) {
+            callback(e);
+        });
+    }
+
+    function fetchGroups(callback) {
+        $.get(api_url + "/groups", function(data) {
+            callback(data);
+        });
+    }
 </script>
 <nav class="navbar navbar-default">
     <div class="container-fluid">
@@ -52,7 +166,7 @@
                 <button type="submit" class="btn btn-default">Submit</button>
             </form>
             <ul class="nav navbar-nav navbar-right">
-                <li><a href="#">Link</a></li>
+                <li><a id="groupName" href="#">Link</a></li>
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">@username.capitalize <span class="caret"></span></a>
                     <ul class="dropdown-menu">

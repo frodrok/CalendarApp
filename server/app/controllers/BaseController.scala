@@ -99,7 +99,8 @@ class BaseController @Inject()(val messagesApi: MessagesApi,
     (JsPath \ "username").read[String] and
       (JsPath \ "password").readNullable[String] and
       (JsPath \ "admin").readNullable[Boolean] and
-      (JsPath \ "groupId").readNullable[Int]
+      (JsPath \ "groupId").readNullable[Int] and
+        (JsPath \ "superAdmin").readNullable[Boolean]
     )(JsonUser.apply _)
 
   implicit val jsonGroupRead: Reads[JsonGroup] = (

@@ -35,7 +35,7 @@
     <div class="row vertical-center-row">
     <div id="wrapper">
 
-<div id="register" class="col-md-offset-3 col-md-3">
+@*<div id="register" class="col-md-offset-3 col-md-3">
 
 <h1>@registerText</h1>
 @form(action = routes.BaseController.register()) {
@@ -49,9 +49,9 @@
     <input type="submit" class="btn btn-success" value="@registerText" />
 
 }
-</div>
+</div>*@
 
-    <div id="login" class="col-md-3">
+    <div id="login" class="col-md-offset-3 col-md-3">
         <h1>@loginText</h1>
         @form(action = routes.BaseController.login()) {
 
